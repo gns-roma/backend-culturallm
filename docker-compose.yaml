@@ -1,12 +1,12 @@
 services: 
     mariadb:
         image: mariadb:11.7.2-ubi9
-        container_name: database-culturallm
+        container_name: culturallm-db
         ports:
           - "3307:3306"
         environment:
           MYSQL_ROOT_PASSWORD: rootpassword
-          MYSQL_DATABASE: culturallm_db
+          MYSQL_DATABASE: culturallm_database
           MYSQL_USER: backend
           MYSQL_PASSWORD: backend1234
         volumes:
@@ -22,7 +22,7 @@ services:
         build: ./backend
         ports: 
         - "8003:8003"
-        container_name: backend-culturallm
+        container_name: culturallm_backend
         depends_on: 
           mariadb:
             condition: service_healthy

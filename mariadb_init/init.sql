@@ -1,6 +1,6 @@
 CREATE DATABASE IF NOT EXISTS culturallm_db;
 
-USE culturallm-db;
+USE culturallm_db;
 
 CREATE TABLE IF NOT EXISTS user (
     id INT AUTO_INCREMENT,

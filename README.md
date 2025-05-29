@@ -1,11 +1,16 @@
 # CulturaLLM Backend
 
-### how to run
+### How to run
 
-```docker compose up --build ```
+```bash
+./setup.sh
+docker compose up --build
+```
 
-you may need ```sudo```
+you may need ```sudo``` privileges
 
-### how to remove 
+### How to remove 
 
-```docker compose down```
+```bash
+docker compose down
+```

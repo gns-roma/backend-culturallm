@@ -1,7 +1,7 @@
 
-if [ ! -d "mariadb-data" ] && mkdir -p mariadb_data; then
+if [ ! -d "mariadb_data" ] && mkdir -p mariadb_data; then
     echo "created mariadb_data/ folder"
-else
+elif [ ! -d "mariadb_data" ]; then
     echo "ERROR: while creating mariadb_data/ folder"
     exit 1
 fi

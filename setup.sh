@@ -5,9 +5,9 @@ elif [ ! -d "mariadb_data" ]; then
     echo "ERROR: while creating mariadb_data/ folder"
     exit 1
 fi
-if sudo chown -R 999:999 mariadb_data; then
-    echo "changed owner for mariadb_data/ folder"
+if sudo chmod 777 mariadb_data; then
+    echo "changed mode for mariadb_data/folder"
 else 
-    echo "ERROR: while changing owner for mariadb_data/ folder"
+    echo "ERROR: while changing mode for mariadb_data/ folder"
     echo "the Mariadb container may not work properly"
 fi

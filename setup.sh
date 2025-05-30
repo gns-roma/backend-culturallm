@@ -1,2 +1,13 @@
-mkdir -p mariadb_data
-sudo chown -R 999:999 mariadb_data
+
+if [ ! -d "mariadb-data" ] && mkdir -p mariadb_data; then
+    echo "created mariadb_data/ folder"
+else
+    echo "ERROR: while creating mariadb_data/ folder"
+    exit 1
+fi
+if sudo chown -R 999:999 mariadb_data; then
+    echo "changed owner for mariadb_data/ folder"
+else 
+    echo "ERROR: while changing owner for mariadb_data/ folder"
+    echo "the Mariadb container may not work properly"
+fi

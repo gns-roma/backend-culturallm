@@ -20,7 +20,7 @@ services:
         build: ./backend
         ports: 
         - "8003:8003"
-        container_name: culturallm_backend
+        container_name: culturallm-backend
         depends_on: 
           mariadb:
             condition: service_healthy

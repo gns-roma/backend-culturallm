@@ -4,3 +4,4 @@ jinja2
 mariadb
 python-multipart
 pytest
+httpx

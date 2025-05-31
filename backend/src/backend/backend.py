@@ -2,6 +2,8 @@ import logging
 from fastapi import FastAPI, HTTPException
 from pydantic import ValidationError
 
+from crypto.password import get_salt
+
 
 app = FastAPI()
 

@@ -1,27 +1,27 @@
 services: 
-    mariadb:
-        image: mariadb:11.7.2-ubi9
-        container_name: culturallm-db
-        ports:
-          - "3307:3306"
-        environment:
-          - MYSQL_ROOT_PASSWORD= rootpassword
-          - MYSQL_DATABASE= culturallm_database
-        volumes:
-          - ./mariadb_data/:/var/lib/mysql:Z
-          - ./mariadb_init/init.sql:/docker-entrypoint-initdb.d/init.sql
-        healthcheck:
-          test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
-          start_period: 5s
-          interval: 5s
-          timeout: 5s
-          retries: 3
-    backend:
-        build: ./backend
-        ports: 
-        - "8003:8003"
-        container_name: culturallm-backend
-        depends_on: 
-          mariadb:
-            condition: service_healthy
+  mariadb:
+    image: mariadb:11.7.2-ubi9
+    container_name: culturallm-db
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpassword
+      - MYSQL_DATABASE=culturallm_db
+    ports:
+      - "3307:3306"
+    volumes:
+      - ./mariadb_data/:/var/lib/mysql:Z
+      - ./mariadb_init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      start_period: 5s
+      interval: 5s
+      timeout: 5s
+      retries: 3
 
+  backend:
+    build: ./backend
+    ports: 
+      - "8003:8003"
+    container_name: culturallm-backend
+    depends_on: 
+      mariadb:
+        condition: service_healthy

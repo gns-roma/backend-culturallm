@@ -12,6 +12,6 @@ def hash_password(password, salt) -> str:
     return pwd_hash
 
 # checks wether the password is correct or not
-def verify_password(stored_hash, stored_salt, provided_password):
+def verify_password(stored_hash, stored_salt, provided_password) ->bool:
     pwd_hash = hashlib.sha256(stored_salt + provided_password.encode()).hexdigest()
     return pwd_hash == stored_hash

@@ -14,3 +14,5 @@ def test_register():
     assert response.status_code == 400
     response = client.post("/register/", json={"user": "hahah", "email": "noemail", "password": "prova"})
     assert response.status_code == 422
+    response = client.post("/register/", json={"user": "hahah", "email": "noemail@silos", "password": "prova"})
+    assert response.status_code == 422

@@ -5,6 +5,7 @@ from pydantic import ValidationError
 from endpoints.auth import register, login
 from contextlib import asynccontextmanager
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     conn = mariadb.connect(
@@ -17,10 +18,12 @@ async def lifespan(app: FastAPI):
     conn.close()
     yield
 
+
 app = FastAPI(lifespan=lifespan)
-app = FastAPI()
+
 app.title = "Backend CulturaLLM API"
 app.description = "API for managing CulturaLLM project."
+
 logger = logging.getLogger('uvicorn.error')
 logger.setLevel(logging.INFO)
 # se vogliamo attivare i log di debug possiamo settare il livello a logging.DEBUG

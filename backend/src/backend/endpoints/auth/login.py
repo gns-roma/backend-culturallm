@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 import mariadb
 from db.mariadb import db_connection, execute_query
 from endpoints.auth.models import LoginRequest, Response
-from endpoints.auth.crypto.password import verify_password
+from crypto.password import verify_password
 from typing import Tuple
 
 router = APIRouter()

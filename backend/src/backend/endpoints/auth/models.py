@@ -25,10 +25,10 @@ class RegisterRequest(BaseModel):
         return self
     
 class LoginRequest(BaseModel):
-    user: str = Field(..., min_length=1),
+    user: str = Field(..., min_length=1)
     password: str = Field(..., min_length=12, max_length=100,
                           description="User password")
     
 class Response(BaseModel):
-    status: bool
+    status: int
 

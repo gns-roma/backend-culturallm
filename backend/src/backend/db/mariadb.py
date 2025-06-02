@@ -1,4 +1,3 @@
-# todo
 import mariadb
 from fastapi import HTTPException
 

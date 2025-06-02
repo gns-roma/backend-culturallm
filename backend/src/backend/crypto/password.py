@@ -7,7 +7,6 @@ def get_salt(byte: int) -> bytes:
 
 # it computes the hash of pwd + salt
 def hash_password(password, salt) -> str:
-    # Combina la password e il salt e calcola l'hash SHA-256
     pwd_hash: str = hashlib.sha256(salt + password.encode()).hexdigest()
     return pwd_hash
 

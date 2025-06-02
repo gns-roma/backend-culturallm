@@ -24,7 +24,8 @@ jobs:
         run: sleep 20
 
       - name: Run tests inside backend container
-        run: docker-compose exec -T backend pytest
+        # usiamo python -m perche cosi include . in sys.path automaticamente
+        run: docker-compose exec -T backend python -m pytest
 
       - name: Tear down containers
         if: always()

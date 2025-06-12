@@ -1,6 +1,7 @@
 import logging
-from endpoints.profile import profile
 from fastapi import FastAPI
+from endpoints.questions import topics, questions
+from endpoints.profile import profile
 from endpoints.auth import auth
 
 
@@ -16,3 +17,5 @@ logger.setLevel(logging.INFO)
 
 app.include_router(auth.router)
 app.include_router(profile.router)
+app.include_router(topics.router)
+app.include_router(questions.router)

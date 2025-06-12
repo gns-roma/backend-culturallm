@@ -16,3 +16,18 @@ def get_topics():
         "musica",
     ]
     return {"topics": topics}
+
+
+@router.get("/topics/random")
+def get_random_topic():
+    """
+    Retrieve a random topic.
+    """
+    import random
+    topics = [
+        "cibo",
+        "sport",
+        "cinema",
+        "musica",
+    ]
+    return {"topic": random.choice(topics)}

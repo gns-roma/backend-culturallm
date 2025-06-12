@@ -15,19 +15,28 @@ FLUSH PRIVILEGES;
 
 -- table creation
 CREATE TABLE IF NOT EXISTS users (
-    user VARCHAR(255) PRIMARY KEY,
+    username VARCHAR(255) PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
     salt VARCHAR(255) NOT NULL,
-    date DATETIME NOT NULL
+    signup_date DATETIME NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS questions (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user VARCHAR(255),
+    username VARCHAR(255), /* può essere null per indicare una domanda di un LLM */
+    type ENUM('human', 'llm') NOT NULL DEFAULT 'human',
     question TEXT NOT NULL,
     topic VARCHAR(255) NOT NULL,
+    cultural_specificity INT /*NOT NULL*/,
+    cultural_specificity_notes TEXT /*NOT NULL*/,
+    FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(255) NOT NULL,
+    action_type VARCHAR(255) NOT NULL,
     score INT NOT NULL,
-    score_notes TEXT NOT NULL,
-    FOREIGN KEY (user) REFERENCES users(user) ON DELETE CASCADE
-)
+    timestamp DATETIME NOT NULL
+);

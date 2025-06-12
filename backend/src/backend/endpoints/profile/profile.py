@@ -17,9 +17,9 @@ def profile(
     Retrieve the profile of the current user.
     """
     get_query = """
-        SELECT user, email, signup_date 
+        SELECT username, email, signup_date 
         FROM users 
-        WHERE user = ?
+        WHERE username = ?
     """
     result = execute_query(db, get_query, (current_user,))
     if not result:

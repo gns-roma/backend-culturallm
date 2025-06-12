@@ -15,6 +15,9 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
 #decode token and return a dict with data
 def decode_access_token(token: str) -> dict:
     try:
+        if not token:
+            raise ValueError("Token non fornito")
+        
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload
     except jwt.ExpiredSignatureError:

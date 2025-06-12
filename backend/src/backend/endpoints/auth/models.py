@@ -1,7 +1,8 @@
+from unittest.mock import Base
 from pydantic import BaseModel, EmailStr, Field, model_validator
 
-class RegisterRequest(BaseModel):
-    user: str = Field(..., min_length=1)
+class SignupRequest(BaseModel):
+    username: str = Field(..., min_length=1)
     email: EmailStr
     password: str = Field(
         ...,
@@ -24,11 +25,7 @@ class RegisterRequest(BaseModel):
             raise ValueError(f"Password must contain at least one symbol from {''.join(allowed_symbols)}")
         return self
     
-class LoginRequest(BaseModel):
-    user: str = Field(..., min_length=1)
-    password: str = Field(..., min_length=12, max_length=100,
-                          description="User password")
-    
-class Response(BaseModel):
-    status: int
 
+class Token(BaseModel):
+    access_token: str
+    token_type: str = "bearer"

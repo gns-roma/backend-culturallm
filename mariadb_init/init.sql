@@ -33,6 +33,17 @@ CREATE TABLE IF NOT EXISTS questions (
     FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS answers (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    question_id INT NOT NULL,
+    username VARCHAR(255),
+    type ENUM('human', 'llm') NOT NULL DEFAULT 'human',
+    answer TEXT NOT NULL,
+    timestamp DATETIME NOT NULL,
+    FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE,
+    FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS logs (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(255) NOT NULL,

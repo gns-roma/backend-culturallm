@@ -28,10 +28,10 @@ def submit_question(
 
     # TODO: Nella query dovremo anche inserire la valutazione dell'IA della domanda
     insert_query = """
-        INSERT INTO questions (question, topic, type, username) 
-        VALUES (?, ?, ?, ?)
+        INSERT INTO questions (question, topic, type, username, timestamp) 
+        VALUES (?, ?, ?, ?, NOW())
     """
-    params = (question, topic, type, current_user)
+    params = (question, topic, type, username)
 
     #Oppure potremmo inserirla, farla validare e in modo asincrono aggiornare la riga
 

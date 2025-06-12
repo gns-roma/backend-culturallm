@@ -1,16 +1,12 @@
-import re
 import mariadb
 from fastapi import HTTPException
 
+from db.pool import get_pool
+
+
 def db_connection():
     """Return a connection to the database, and close it when done"""
-    conn = mariadb.connect(
-        host="culturallm-db",
-        port=3306,
-        user="user",
-        password="userpassword",
-        database="culturallm_db"
-    )
+    conn = get_pool().get_connection()
     try:
         yield conn
     finally:

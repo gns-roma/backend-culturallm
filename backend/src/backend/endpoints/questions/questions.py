@@ -60,6 +60,8 @@ def get_random_question(
 
     return Question(**row)
 
+
+
 @router.get("/{question_id}")
 def get_question(question_id: int, db: Annotated[mariadb.Connection, Depends(db_connection)])->Question:
     """

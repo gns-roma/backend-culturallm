@@ -1,8 +1,15 @@
 from fastapi.testclient import TestClient
 from backend import app
 
+import pytest
+from db.pool import init_pool
+
 client = TestClient(app)
 access_token = None
+
+@pytest.fixture(scope="session", autouse=True)
+def initialize_db_pool():
+    init_pool()
 
 def test_signup():
     response = client.post("/auth/signup/", json={"username": "sorcarlo", "email": "carlo.verdone1927@gmail.com", "password": "forzamaggica1927"})

@@ -1,11 +1,20 @@
 import logging
 from fastapi import FastAPI
+from fastapi.concurrency import asynccontextmanager
+
+from db.pool import init_pool
 from endpoints.questions import topics, questions
 from endpoints.profile import profile
 from endpoints.auth import auth
 
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_pool()
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
 
 app.title = "Backend CulturaLLM API"
 app.description = "API for managing CulturaLLM project."

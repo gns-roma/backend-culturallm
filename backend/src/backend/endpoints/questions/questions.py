@@ -60,11 +60,21 @@ def get_random_question(
 
     return Question(**row)
 
-
-
 @router.get("/{question_id}")
-def get_question(question_id: int):
+def get_question(question_id: int, db: Annotated[mariadb.Connection, Depends(db_connection)])->Question:
     """
     Retrieve a question by its ID.
     """
-    pass
+    select_query = """
+        SELECT id, type, username, question, topic, cultural_specificity, cultural_specificity_notes 
+        FROM questions 
+        WHERE id = ?
+    """
+    params = (question_id,)
+    row = execute_query(db, select_query, params,fetchone=True, dict=True)
+    if not row:
+        raise HTTPException(status_code=404, detail="Nessuna domanda trovata")
+    return Question(**row)
+
+
+

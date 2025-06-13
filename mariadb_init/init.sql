@@ -52,7 +52,7 @@ CREATE TABLE ratings (
     rating INT NOT NULL CHECK (rating BETWEEN 1 AND 5),
     useful_per_specificity BOOLEAN NOT NULL,
     flag_ia BOOLEAN NOT NULL,
-    UNIQUE KEY (id_answer, id_user),
+    UNIQUE KEY (id_answer, username),
     FOREIGN KEY (id_answer) REFERENCES answers(id) ON DELETE CASCADE,
     FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE
 );

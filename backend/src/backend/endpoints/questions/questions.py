@@ -26,7 +26,8 @@ def submit_question(
         return Response(status_code=401, content="Unauthorized: User must be logged in to submit a human question.")
     
     username = current_user if type == "human" else None
-    # TODO: Si potrebbe aggiungere un controllo per evitare domande duplicate
+    # TODO: Si potrebbe aggiungere un controllo per evitare domande duplicate, anche se poco probabile
+    # che due utenti scrivano la stessa domanda
     # TODO: Nella query dovremo anche inserire la valutazione dell'IA della domanda
     insert_query = """
         INSERT INTO questions (question, topic, type, username) 
@@ -96,17 +97,42 @@ def get_question(question_id: int, db: Annotated[mariadb.Connection, Depends(db_
 
 
 @router.get("/{question_id}/answers")
-def get_answers_to_question(question_id: int, db: Annotated[mariadb.Connection, Depends(db_connection)])->List[Answer]:
+def get_answers_to_question(question_id: int, 
+    db: Annotated[mariadb.Connection, Depends(db_connection)],
+    current_user: Annotated[Optional[str], Depends(get_current_user)] = None,
+    type: Literal["human", "llm"] = "human")-> List[Answer]:
+
+    if type == "human" and current_user is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Unauthorized: User must be logged in to answer a question.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    username = current_user if type == "human" else None
+
     """
     Retrieve answers to a question by its ID
+    """
+    """
+    Noi qua prendiamo tutte le risposte a una certa domanda, affinche il current_user le possa validare, 
+    quindi dobbiamo escludere le risposte che l'utente ha scritto oppure che ha già valutato 
     """
     select_query = """
         SELECT id, type, username, question_id, answer
         FROM answers
         WHERE question_id = ?
+        EXCEPT
+        SELECT a.id, a.type, a.username, a.question_id, a.answer
+        FROM answers a LEFT JOIN ratings r ON a.id = r.answer_id
+        WHERE a.question_id = ? AND (a.username = ? OR r.username = ?)
     """
-    params = (question_id, )
+    params = (question_id, question_id, username, username)
     rows = execute_query(db, select_query, params,dict=True)
     if not rows:
         raise HTTPException(status_code=404, detail="No answers found for the question")
+    #Noi qua prendiamo tutte le risposte a una certa domanda,
+    # affinche l'utente le possa poi validare, quindi dobbiamo 
+    # filtrare le risposte che l'utente ha scritto lui o che ha già valutato
+    #Il modello LLM invece dovrebbe valutare subito una risposta, appena un utente fa il submit
     return [Answer(**row) for row in rows]

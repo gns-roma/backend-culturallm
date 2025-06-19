@@ -60,7 +60,7 @@ def get_validations_to_answer(answer_id: int, db: Annotated[mariadb.Connection, 
     Retrieve ratings by its answer_ID.
     """
     select_query = """
-        SELECT id, answer_id, username, rating, flag_ia 
+        SELECT id, answer_id,question_id, username, rating, flag_ia 
         FROM ratings
         WHERE answer_id = ?
     """

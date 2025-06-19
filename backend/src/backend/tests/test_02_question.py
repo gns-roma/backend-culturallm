@@ -43,7 +43,7 @@ def test_get_answer_and_validate():
 
     question_id_1: int | None = None
     question_id_2: int | None = None
-
+    # Header1 risponde alla domanda con il compianto Fabrizio Frizzi, e question_id_1=2
     random_response = client.get("/questions/random", headers=headers1)
     if random_response.status_code == 200:
         question_id_1 = random_response.json()["id"]
@@ -56,7 +56,7 @@ def test_get_answer_and_validate():
         }, headers=headers1)
         assert answer_response.status_code == 201
 
-
+    # Header2 risponde alla domanda con il compianto Fabrizio Frizzi, e question_id_2=1
     random_response = client.get("/questions/random", headers=headers2)
     if random_response.status_code == 200:
         question_id_2= random_response.json()["id"]
@@ -69,11 +69,14 @@ def test_get_answer_and_validate():
         }, headers=headers2)
         assert answer_response.status_code == 201
 
-    answers_response = client.get(f"/questions/{question_id_1}/answers")
-    assert answers_response.status_code in (200, 404)
+    #Validation Phase
 
     answer_id_1: int | None = None
     answer_id_2: int | None = None
+
+    answers_response = client.get(f"/questions/{question_id_1}/answers", headers=headers2)
+    assert answers_response.status_code in (200, 404, 401)
+
 
     if answers_response.status_code == 200:
         answers = answers_response.json()
@@ -84,11 +87,12 @@ def test_get_answer_and_validate():
     rating_response = client.post("/validation/rating", params={
         "rating": 5,
         "answer_id": answer_id_1,
+        "question_id": question_id_1,
         "flag_ia": False
     }, headers=headers2)
     assert rating_response.status_code == 201
     
-    answers_response = client.get(f"/questions/{question_id_2}/answers")
+    answers_response = client.get(f"/questions/{question_id_2}/answers", headers=headers1)
     assert answers_response.status_code in (200, 404)
     if answers_response.status_code == 200:
         answers = answers_response.json()
@@ -99,6 +103,7 @@ def test_get_answer_and_validate():
     rating_response = client.post("/validation/rating", params={
         "rating": 5,
         "answer_id": answer_id_2,
+        "question_id": question_id_2,
         "flag_ia": False
     }, headers=headers1)
     assert rating_response.status_code == 201

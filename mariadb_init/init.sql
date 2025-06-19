@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS answers (
     type ENUM('human', 'llm') NOT NULL DEFAULT 'human',
     answer TEXT NOT NULL,
     timestamp DATETIME NOT NULL,
+    UNIQUE (question_id, username), /* Un utente può rispondere una sola volta alla stessa domanda */
     FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE,
     FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE
 );
@@ -48,9 +49,12 @@ CREATE TABLE IF NOT EXISTS answers (
 CREATE TABLE IF NOT EXISTS ratings (
     id INT AUTO_INCREMENT PRIMARY KEY,
     answer_id INT NOT NULL UNIQUE,
+    question_id INT NOT NULL,
     username VARCHAR(255) UNIQUE,
     rating INT NOT NULL CHECK (rating BETWEEN 1 AND 5),
     flag_ia BOOLEAN NOT NULL,
+    UNIQUE (question_id, username, answer_id), /* Un utente può valutare una sola volta la stessa risposta a una certa domanda */
+    FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE,
     FOREIGN KEY (answer_id) REFERENCES answers(id) ON DELETE CASCADE,
     FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE
 );

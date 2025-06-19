@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS questions (
     topic VARCHAR(255) NOT NULL,
     cultural_specificity INT /*NOT NULL*/,
     cultural_specificity_notes TEXT /*NOT NULL*/,
-    tag TEXT NOT NULL,
+    tag TEXT,
     FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE
 );
 
@@ -46,11 +46,10 @@ CREATE TABLE IF NOT EXISTS answers (
 );
 
 CREATE TABLE IF NOT EXISTS ratings (
-    id_rating INT AUTO_INCREMENT PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     id_answer INT NOT NULL,
     username VARCHAR(255),
     rating INT NOT NULL CHECK (rating BETWEEN 1 AND 5),
-    useful_per_specificity BOOLEAN NOT NULL,
     flag_ia BOOLEAN NOT NULL,
     UNIQUE KEY (id_answer, username),
     FOREIGN KEY (id_answer) REFERENCES answers(id) ON DELETE CASCADE,

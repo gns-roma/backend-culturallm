@@ -1,4 +1,4 @@
-# todo
+
 from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -52,7 +52,7 @@ def login(
 
 
 @router.post("/signup")
-def signup(data: SignupRequest, conn: mariadb.Connection = Depends(db_connection)) -> Token:
+def signup(data: SignupRequest, conn: Annotated[mariadb.Connection, Depends(db_connection)]) -> Token:
     salt_pwd = get_salt(16)
     salt_hex = salt_pwd.hex()
 
@@ -73,5 +73,5 @@ def signup(data: SignupRequest, conn: mariadb.Connection = Depends(db_connection
         VALUES (?, ?, ?, ?, NOW())
     """
     execute_query(conn, insert_query, (data.username, data.email, pwd_hash, salt_hex), fetch=False)
-    
+
     return Token(access_token=create_access_token({"sub": data.username}), token_type="bearer")

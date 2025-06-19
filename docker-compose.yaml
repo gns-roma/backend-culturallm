@@ -12,10 +12,10 @@ services:
       - ./mariadb_init:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
-      start_period: 5s
-      interval: 5s
-      timeout: 5s
-      retries: 3
+      start_period: 10s
+      interval: 10s
+      timeout: 10s
+      retries: 5
 
   backend:
     build: ./backend

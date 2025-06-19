@@ -11,6 +11,7 @@ access_token = None
 def initialize_db_pool():
     init_pool()
 
+@pytest.mark.order(1)
 def test_signup():
     response = client.post("/auth/signup/", json={"username": "sorcarlo", "email": "carlo.verdone1927@gmail.com", "password": "forzamaggica1927"})
     assert response.status_code == 422
@@ -25,6 +26,7 @@ def test_signup():
     response = client.post("/auth/signup/", json={"username": "hahah", "email": "noemail@silos", "password": "prova"})
     assert response.status_code == 422
     
+@pytest.mark.order(2)
 def test_login():
     response = client.post("/auth/login/", data={"username": "sorcarlo", "password": "forzamaggica1927!"})
     assert response.status_code == 200
@@ -32,6 +34,7 @@ def test_login():
     global access_token
     access_token = response.json()["access_token"]
 
+@pytest.mark.order(3)
 def test_profile():
     headers = {"Authorization": f"Bearer {access_token}"}
     print(headers)

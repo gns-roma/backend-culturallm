@@ -24,10 +24,5 @@ def get_random_topic():
     Retrieve a random topic.
     """
     import random
-    topics = [
-        "cibo",
-        "sport",
-        "cinema",
-        "musica",
-    ]
-    return {"topic": random.choice(topics)}
+    topics = get_topics()
+    return {"topic": random.choice(topics["topics"])}

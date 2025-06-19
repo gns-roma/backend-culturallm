@@ -47,12 +47,11 @@ CREATE TABLE IF NOT EXISTS answers (
 
 CREATE TABLE IF NOT EXISTS ratings (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    id_answer INT NOT NULL,
-    username VARCHAR(255),
+    answer_id INT NOT NULL UNIQUE,
+    username VARCHAR(255) UNIQUE,
     rating INT NOT NULL CHECK (rating BETWEEN 1 AND 5),
     flag_ia BOOLEAN NOT NULL,
-    UNIQUE KEY (id_answer, username),
-    FOREIGN KEY (id_answer) REFERENCES answers(id) ON DELETE CASCADE,
+    FOREIGN KEY (answer_id) REFERENCES answers(id) ON DELETE CASCADE,
     FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE
 );
 

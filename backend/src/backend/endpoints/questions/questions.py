@@ -49,14 +49,19 @@ def get_random_question(
     current_user: Annotated[Optional[str], Depends(get_current_user)] = None,
     type: Literal["human", "llm"] = "human"
 ) -> Question:
-    #MODIFICA DA VALUTARE
-    if type == "human" and current_user is None:
-        return Response(status_code=401, content="Unauthorized: User must be logged in to answer a question.")
-    
-    username = current_user if type == "human" else None
     """
     Retrieve a random question.
     """    
+
+    if type == "human" and current_user is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Unauthorized: User must be logged in to answer a question.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    username = current_user if type == "human" else None
+
     select_query = """
         SELECT id, type, username, question, topic, cultural_specificity, cultural_specificity_notes 
         FROM questions 

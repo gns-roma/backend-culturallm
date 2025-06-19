@@ -6,6 +6,8 @@ from db.pool import init_pool
 from endpoints.questions import topics, questions
 from endpoints.profile import profile
 from endpoints.auth import auth
+from endpoints.answers import answers
+from endpoints.validate import validations
 
 
 @asynccontextmanager
@@ -28,3 +30,5 @@ app.include_router(auth.router)
 app.include_router(profile.router)
 app.include_router(topics.router)
 app.include_router(questions.router)
+app.include_router(answers.router)
+app.include_router(validations.router)

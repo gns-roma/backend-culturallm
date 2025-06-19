@@ -1,17 +1,9 @@
-from typing import Literal
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, Field
 
 
 class Rating(BaseModel):
     id: int
-    id_answer: int
+    answer_id: int
     username: str | None
-    rating: int
+    rating: int = Field(..., ge=1, le=5)
     flag_ia: bool
-
-    @model_validator(mode="after")
-    def validate_rating(self):
-        if(self.rating > 5 or self.rating<1):
-            raise ValueError("Rating must be a value between 1 and 5")
-        return self
-    

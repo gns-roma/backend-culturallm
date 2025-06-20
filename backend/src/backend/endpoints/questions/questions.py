@@ -28,7 +28,8 @@ def submit_question(
     username = current_user if type == "human" else None
     # TODO: Si potrebbe aggiungere un controllo per evitare domande duplicate, anche se poco probabile
     # che due utenti scrivano la stessa domanda
-    # TODO: Nella query dovremo anche inserire la valutazione dell'IA della domanda
+    # TODO: Nella query dovremo anche inserire la valutazione dell'IA della domanda che deve essere un 
+    # integer da 1 a 10, più un commento opzionale sulla domanda
     insert_query = """
         INSERT INTO questions (question, topic, type, username) 
         VALUES (?, ?, ?, ?)
@@ -44,8 +45,8 @@ def submit_question(
     return Response(status_code=201)
 
 
-@router.get("/random")
-def get_random_question(
+@router.get("/random/to_answer")
+def get_random_question_to_answer(
     db: Annotated[mariadb.Connection, Depends(db_connection)],
     current_user: Annotated[Optional[str], Depends(get_current_user)] = None,
     type: Literal["human", "llm"] = "human"
@@ -63,15 +64,36 @@ def get_random_question(
     
     username = current_user if type == "human" else None
 
+    #Ritorna una domanda casuale che non è stata ne scritta ne a cui l'utente ha già risposto
     select_query = """
-        SELECT id, type, username, question, topic, cultural_specificity, cultural_specificity_notes 
-        FROM questions 
-        WHERE username != ?
+        SELECT q.id, q.type, q.username, q.question, q.topic, q.cultural_specificity, q.cultural_specificity_notes
+        FROM questions q
+        WHERE q.username != ? AND q.id NOT IN (SELECT question_id FROM answers WHERE username = ?)
         ORDER BY RAND()
         LIMIT 1
-    """
-    params = (username, )
+        """
+    params = (username, username)
     row = execute_query(db, select_query, params, fetchone=True, dict=True)
+    if row is None:
+        raise HTTPException(status_code=404, detail="Nessuna domanda disponibile.")
+    return Question(**row)
+
+@router.get("/random")
+def get_random_question(
+    db: Annotated[mariadb.Connection, Depends(db_connection)],
+    type: Literal["human", "llm"] = "human"
+) -> Question:
+    """
+    Retrieve a random question.
+    """    
+    #Ritorna una domanda casuale
+    select_query = """
+        SELECT q.id, q.type, q.username, q.question, q.topic, q.cultural_specificity, q.cultural_specificity_notes
+        FROM questions q
+        ORDER BY RAND()
+        LIMIT 1
+        """
+    row = execute_query(db, select_query, fetchone=True, dict=True)
     if row is None:
         raise HTTPException(status_code=404, detail="Nessuna domanda disponibile.")
     return Question(**row)

@@ -1,125 +1,130 @@
 from fastapi.testclient import TestClient
 import pytest
+from typing import List
 
 from backend import app
 
 #RISCRIVERLI TUTTI MEGLIO
 client = TestClient(app)
-
+access_tokens = [] 
+headers = []
+answer_ids = []
 
 @pytest.mark.order(4)
 def test_login():
-    global access_token1, access_token2
-
     response = client.post("/auth/login/", data={"username": "sorcarlo", "password": "forzamaggica1927!"})
     assert response.status_code == 200
     assert "access_token" in response.json()
-    access_token1 = response.json()["access_token"]
+    access_tokens.append(response.json()["access_token"])
+    headers.append({"Authorization": f"Bearer {response.json()['access_token']}"})
 
     response = client.post("/auth/login/", data={"username": "Mariano", "email": "marianogiusti@libero.it", "password": "luit1perdon4!"})
     assert response.status_code == 200
     assert "access_token" in response.json()
-    access_token2 = response.json()["access_token"]
+    access_tokens.append(response.json()["access_token"])
+    headers.append({"Authorization": f"Bearer {response.json()['access_token']}"})
 
+    response = client.post("/auth/login/", data={"username": "tamburini", "password": "forzamaggica1927!"})
+    assert response.status_code == 200
+    assert "access_token" in response.json()
+    access_tokens.append(response.json()["access_token"])
+    headers.append({"Authorization": f"Bearer {response.json()['access_token']}"})
+
+    response = client.post("/auth/login/", data={"username": "magatrump", "password": "forzamaggica1927!"})
+    assert response.status_code == 200
+    assert "access_token" in response.json()
+    access_tokens.append(response.json()["access_token"])
+    headers.append({"Authorization": f"Bearer {response.json()['access_token']}"})
+
+    response = client.post("/auth/login/", data={"username": "salvobuzzi", "password": "forzamaggica1927!"})
+    assert response.status_code == 200
+    assert "access_token" in response.json()
+    access_tokens.append(response.json()["access_token"])
+    headers.append({"Authorization": f"Bearer {response.json()['access_token']}"})
+
+    response = client.post("/auth/login/", data={"username": "cruciani", "password": "forzamaggica1927!"})
+    assert response.status_code == 200
+    assert "access_token" in response.json()
+    access_tokens.append(response.json()["access_token"])
+    headers.append({"Authorization": f"Bearer {response.json()['access_token']}"})
+
+    response = client.post("/auth/login/", data={"username": "tony777", "password": "forzamaggica1927!"})
+    assert response.status_code == 200
+    assert "access_token" in response.json()
+    access_tokens.append(response.json()["access_token"])
+    headers.append({"Authorization": f"Bearer {response.json()['access_token']}"})
+
+    response = client.post("/auth/login/", data={"username": "sidebaby", "password": "forzamaggica1927!"})
+    assert response.status_code == 200
+    assert "access_token" in response.json()
+    access_tokens.append(response.json()["access_token"])
+    headers.append({"Authorization": f"Bearer {response.json()['access_token']}"})
+
+    response = client.post("/auth/login/", data={"username": "wanna", "password": "forzamaggica1927!"})
+    assert response.status_code == 200
+    assert "access_token" in response.json()
+    access_tokens.append(response.json()["access_token"])
+    headers.append({"Authorization": f"Bearer {response.json()['access_token']}"})
+
+    response = client.post("/auth/login/", data={"username": "montalbano", "password": "forzamaggica1927!"})
+    assert response.status_code == 200
+    assert "access_token" in response.json()
+    access_tokens.append(response.json()["access_token"])
+    headers.append({"Authorization": f"Bearer {response.json()['access_token']}"})
 
 @pytest.mark.order(5)
 def test_submit_question():
-    headers1 = {"Authorization": f"Bearer {access_token1}"}
-    headers2 = {"Authorization": f"Bearer {access_token2}"}
-
-    response = client.post("/questions/", params={"question": "Chi ha incontrato Gesù sulla A24?", "topic": "arte", "type": "human"}, headers=headers1)
-    assert response.status_code == 201
-
-    response = client.post("/questions/", params={"question": "Quando arriva il papa nero?", "topic": "arte", "type": "human"})
-    assert response.status_code == 401
-
-    response = client.post("/questions/", params={"question": "Chi ha interpretato il ruolo di Padre Frediani?", "topic": "arte", "type": "human"}, headers=headers2)
-    assert response.status_code == 201
+    for header in headers:
+        response = client.post("/questions/", params={"question": "Domanda di cultura generale", "topic": "arte", "type": "human"}, headers=header)
+        assert response.status_code == 201
+        response = client.post("/questions/", params={"question": "Domanda di cultura generale ma senza headers", "topic": "arte", "type": "human"})
+        assert response.status_code == 401
 
 @pytest.mark.order(6)
-def test_get_answer_and_validate():
-    headers1 = {"Authorization": f"Bearer {access_token1}"}
-    headers2 = {"Authorization": f"Bearer {access_token2}"}
+def test_answer_to_question():
+    for i,header in enumerate(headers):
+        for j in range(8):
+            response = client.get("/questions/random/to_answer", headers=header)
+            assert response.status_code == 200
+            question_id = response.json()["id"]
+            response = client.post("/answers/", params={
+            "answer": f"{j+1}° Risposta generica dell'{i+1}° utente a una domanda generica di cultura generale.",
+            "question_id": question_id,
+            "type": "human"}, headers=header)
+            assert response.status_code == 201
 
-    question_id_1: int | None = None
-    question_id_2: int | None = None
-    # Header1 risponde alla domanda con il compianto Fabrizio Frizzi, e question_id_1=2
-    random_response = client.get("/questions/random", headers=headers1)
-    if random_response.status_code == 200:
-        question_id_1 = random_response.json()["id"]
-
-        print("Random question retrieved successfully: ", question_id_1,random_response.json()["question"])
-        answer_response = client.post("/answers/", params={
-            "answer": "Il compianto Fabrizio Frizzi ha interpretato il ruolo di Padre Frediani.",
-            "question_id": question_id_1,
-            "type": "human"
-        }, headers=headers1)
-        assert answer_response.status_code == 201
-
-    # Header2 risponde alla domanda con il compianto Fabrizio Frizzi, e question_id_2=1
-    random_response = client.get("/questions/random", headers=headers2)
-    if random_response.status_code == 200:
-        question_id_2= random_response.json()["id"]
-
-        print("Random question retrieved successfully: ", question_id_2,random_response.json()["question"])
-        answer_response = client.post("/answers/", params={
-            "answer": "Il grande Mariano Giusti ha incontrato Gesù sulla A24.",
-            "question_id": question_id_2,
-            "type": "human"
-        }, headers=headers2)
-        assert answer_response.status_code == 201
-
-    #Validation Phase
-
-    answer_id_1: int | None = None
-    answer_id_2: int | None = None
-
-    answers_response = client.get(f"/questions/{question_id_1}/answers", headers=headers2)
-    assert answers_response.status_code in (200, 404, 401)
-
-
-    if answers_response.status_code == 200:
-        answers = answers_response.json()
-        answer_id_1 = answers[0]["id"]
-        assert isinstance(answers, list)
-        print("Answers for question 1:", answers)
+@pytest.mark.order(7)
+def test_get_answers_and_validate():
+    #Per ogni utente, prendi una domanda casuale e recupera le risposte
+    for header in headers:
+        random_question = client.get("/questions/random", headers=header)
+        assert random_question.status_code == 200
+        question_id = random_question.json()["id"]
+        response = client.get(f"/questions/{question_id}/answers", headers=header)
+        assert response.status_code == 200
+        #Dopo aver ottenuto la lista di risposte, ogni utente a turno le valida
+        if response.status_code == 200:
+            answers = response.json()
+            assert isinstance(answers, List)
+            print(f"Answers for question {question_id}:", answers)
+            if answers:
+                for answer in answers:
+                    answer_id = answer["id"]
+                    answer_ids.append(answer_id)
+                    rating_response = client.post("/validation/rating", params={
+                        "rating": 5,
+                        "answer_id": answer_id,
+                        "question_id": question_id,
+                        "flag_ia": False
+                    }, headers=header)
+                    assert rating_response.status_code == 201
     
-    rating_response = client.post("/validation/rating", params={
-        "rating": 5,
-        "answer_id": answer_id_1,
-        "question_id": question_id_1,
-        "flag_ia": False
-    }, headers=headers2)
-    assert rating_response.status_code == 201
-    
-    answers_response = client.get(f"/questions/{question_id_2}/answers", headers=headers1)
-    assert answers_response.status_code in (200, 404)
-    if answers_response.status_code == 200:
-        answers = answers_response.json()
-        answer_id_2 = answers[0]["id"]
-        assert isinstance(answers, list)
-        print("Answers for question 2:", answers)
-
-    rating_response = client.post("/validation/rating", params={
-        "rating": 5,
-        "answer_id": answer_id_2,
-        "question_id": question_id_2,
-        "flag_ia": False
-    }, headers=headers1)
-    assert rating_response.status_code == 201
-
-    validations_response = client.get(f"/answers/{answer_id_1}/validations")
-    assert validations_response.status_code == 200
-
-    if validations_response.status_code == 200:
-        validations = validations_response.json()
-        assert isinstance(validations, list)
-        print("Validations for answer 1:", validations)
-
-    validations_response = client.get(f"/answers/{answer_id_2}/validations")
-    assert validations_response.status_code == 200
-
-    if validations_response.status_code == 200:
-        validations = validations_response.json()
-        assert isinstance(validations, list)
-        print("Validations for answer 2:", validations)
+@pytest.mark.order(8)
+def test_get_validations():
+    for answer_id in answer_ids:      
+        validations_response = client.get(f"/answers/{answer_id}/validations")
+        assert validations_response.status_code == 200
+        if validations_response.status_code == 200:
+            validations = validations_response.json()
+            assert isinstance(validations, List)
+            print(f"Validations for answer {answer_id}:", validations)

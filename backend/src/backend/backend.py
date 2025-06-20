@@ -8,6 +8,7 @@ from endpoints.profile import profile
 from endpoints.auth import auth
 from endpoints.answers import answers
 from endpoints.validate import validations
+from endpoints.gamification import leaderboard
 
 
 @asynccontextmanager
@@ -32,3 +33,4 @@ app.include_router(topics.router)
 app.include_router(questions.router)
 app.include_router(answers.router)
 app.include_router(validations.router)
+app.include_router(leaderboard.router)

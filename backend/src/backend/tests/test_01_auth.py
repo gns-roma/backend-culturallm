@@ -25,6 +25,24 @@ def test_signup():
     assert response.status_code == 422
     response = client.post("/auth/signup/", json={"username": "hahah", "email": "noemail@silos", "password": "prova"})
     assert response.status_code == 422
+    response = client.post("/auth/signup/", json={"username": "tamburini", "email": "tamburini.direttore@gmail.com", "password": "forzamaggica1927!"})
+    assert response.status_code == 200
+    response = client.post("/auth/signup/", json={"username": "magatrump", "email": "thedonald@gmail.com", "password": "forzamaggica1927!"})
+    assert response.status_code == 200
+    response = client.post("/auth/signup/", json={"username": "salvobuzzi", "email": "buzzi.salvatore@gmail.com", "password": "forzamaggica1927!"})
+    assert response.status_code == 200
+    response = client.post("/auth/signup/", json={"username": "cruciani", "email": "cruciani@gmail.com", "password": "forzamaggica1927!"})
+    assert response.status_code == 200
+    response = client.post("/auth/signup/", json={"username": "tony777", "email": "tonyeffe@gmail.com", "password": "forzamaggica1927!"})
+    assert response.status_code == 200
+    response = client.post("/auth/signup/", json={"username": "sidebaby", "email": "darkside@gmail.com", "password": "forzamaggica1927!"})
+    assert response.status_code == 200
+    response = client.post("/auth/signup/", json={"username": "wanna", "email": "wannamarchi@gmail.com", "password": "forzamaggica1927!"})
+    assert response.status_code == 200
+    response = client.post("/auth/signup/", json={"username": "montalbano", "email": "mantalbano@gmail.com", "password": "forzamaggica1927!"})
+    assert response.status_code == 200
+
+
     
 @pytest.mark.order(2)
 def test_login():

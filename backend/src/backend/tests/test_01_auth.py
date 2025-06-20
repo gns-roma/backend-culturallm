@@ -40,4 +40,9 @@ def test_profile():
     print(headers)
     response = client.get("/profile/", headers=headers)
     assert response.status_code == 200
-    assert response.json() == {"username": "sorcarlo", "email": "carlo.verdone1927@gmail.com", "date": response.json()["date"]}
+    assert response.json() == {
+        "username": "sorcarlo", 
+        "email": "carlo.verdone1927@gmail.com", 
+        "signup_date": response.json()["signup_date"], 
+        "last_login": response.json()["last_login"]
+    }

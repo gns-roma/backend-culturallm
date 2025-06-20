@@ -17,15 +17,14 @@ def profile(
     Retrieve the profile of the current user.
     """
     get_query = """
-        SELECT username, email, signup_date 
+        SELECT username, email, signup_date, last_login
         FROM users 
         WHERE username = ?
     """
-    result = execute_query(db, get_query, (current_user,))
+    result = execute_query(db, get_query, (current_user,), dict=True, fetchone=True)
     if not result:
         raise HTTPException(status_code=404, detail="User not found")
-    user_data = result[0]
-    return {"username": user_data[0], "email": user_data[1], "date": user_data[2]}
+    return result
 
 
 @router.put("/edit")

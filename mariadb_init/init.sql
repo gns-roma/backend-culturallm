@@ -19,7 +19,8 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(255) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
     salt VARCHAR(255) NOT NULL,
-    signup_date DATETIME NOT NULL
+    signup_date DATETIME NOT NULL,
+    last_login DATETIME NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS questions (

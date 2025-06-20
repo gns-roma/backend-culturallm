@@ -1,4 +1,3 @@
-
 from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -35,8 +34,8 @@ def login(
     conn: mariadb.Connection = Depends(db_connection)
 ) -> Token:
     #Recover password_hash and salt
-    query = "SELECT password_hash, salt FROM users WHERE username = ?"
-    result = execute_query(conn, query, (data.username,))
+    auth_query = "SELECT password_hash, salt FROM users WHERE username = ?"
+    result = execute_query(conn, auth_query, (data.username,))
     
     if not result:
         raise HTTPException(status_code=401, detail="Email o password errati")
@@ -47,6 +46,14 @@ def login(
     #Verify password
     if not verify_password(stored_hash, stored_salt, data.password):
         raise HTTPException(status_code=401, detail="Email o password errati")
+    
+    #Aggiorna last_login
+    update_query = """
+        UPDATE users 
+        SET last_login = NOW()
+        WHERE username = ?
+    """
+    execute_query(conn, update_query, (data.username,), fetch=False)
 
     return Token(access_token=create_access_token({"sub": data.username}), token_type="bearer")
 
@@ -69,8 +76,8 @@ def signup(data: SignupRequest, conn: Annotated[mariadb.Connection, Depends(db_c
         raise HTTPException(status_code=400, detail="Username o email già registrati")
     
     insert_query = """
-        INSERT INTO users (username, email, password_hash, salt, signup_date)
-        VALUES (?, ?, ?, ?, NOW())
+        INSERT INTO users (username, email, password_hash, salt, signup_date, last_login)
+        VALUES (?, ?, ?, ?, NOW(), NOW())
     """
     execute_query(conn, insert_query, (data.username, data.email, pwd_hash, salt_hex), fetch=False)
 

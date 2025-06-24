@@ -1,5 +1,5 @@
 # contenuto cartella mariadb_data
-mariadb_data/*
+mariadb/data/*
 
 # macOS specific
 .DS_Store

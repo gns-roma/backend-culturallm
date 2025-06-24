@@ -1,4 +1,5 @@
 import logging
+import os
 from fastapi import FastAPI
 from fastapi.concurrency import asynccontextmanager
 
@@ -11,9 +12,22 @@ from endpoints.validate import validations
 from endpoints.gamification import leaderboard
 
 
+db_host = os.getenv("DB_HOST", "culturallm-db")
+db_port = int(os.getenv("DB_PORT", 3306))
+db_user = os.getenv("DB_USER", "user")
+db_password = os.getenv("DB_PASSWORD", "userpassword")
+db_name = os.getenv("DB_NAME", "culturallm_db")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    init_pool()
+    init_pool(
+        host=db_host,
+        port=db_port,
+        user=db_user,
+        password=db_password,
+        database=db_name
+    )
     yield
 
 

@@ -72,6 +72,3 @@ CREATE TABLE IF NOT EXISTS leaderboard (
     UNIQUE (username),
     FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE
 );
-
-
-

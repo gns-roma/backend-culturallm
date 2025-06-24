@@ -1,10 +1,8 @@
-from fastapi import APIRouter, Depends, Response, HTTPException
-from typing import Annotated, Literal, Optional, List
-from fastapi.routing import APIRoute
+from fastapi import APIRouter, Depends, HTTPException
+from typing import Annotated, List
 import mariadb
 from db.mariadb import db_connection, execute_query
 from endpoints.auth.auth import get_current_user
-from endpoints.validate.models import Rating
 from endpoints.gamification.models import User
 
 router = APIRouter(prefix="/leaderboard", tags=["leaderboard"])
@@ -43,13 +41,13 @@ def get_user_position(
         )
     username = current_user if type == "human" else None
     select_query = """
-    SELECT username, score,(
+    SELECT username, score, (
         SELECT COUNT(*) + 1
         FROM leaderboard
-        WHERE score > (SELECT score FROM leaderboardWHERE username = ?)) AS position
+        WHERE score > (SELECT score FROM leaderboard WHERE username = ?)) AS position
     FROM leaderboard
     WHERE username = ?"""
-    user = execute_query(db, select_query, (username, username), fetch=False,fetchone=True, dict=True)
+    user = execute_query(db, select_query, (username, username),fetchone=True, dict=True)
     if not user:
         raise HTTPException(status_code=404, detail="No user found")
     return User(**user)

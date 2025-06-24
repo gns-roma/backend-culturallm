@@ -4,16 +4,16 @@ import mariadb
 _pool: mariadb.ConnectionPool | None = None
 
 
-def init_pool():
+def init_pool(host: str, port: int, user: str, password: str, database: str) -> None:
     global _pool
     _pool = mariadb.ConnectionPool(
         pool_name="mypool",
         pool_size=10,
-        host="culturallm-db",
-        port=3306,
-        user="user",
-        password="userpassword",
-        database="culturallm_db",
+        host=host,
+        port=port,
+        user=user,
+        password=password,
+        database=database,
     )
 
 

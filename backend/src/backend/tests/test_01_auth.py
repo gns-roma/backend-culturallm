@@ -1,3 +1,4 @@
+import os
 from fastapi.testclient import TestClient
 from backend import app
 
@@ -9,7 +10,19 @@ access_token = None
 
 @pytest.fixture(scope="session", autouse=True)
 def initialize_db_pool():
-    init_pool()
+    db_host = os.getenv("DB_HOST", "culturallm-db")
+    db_port = int(os.getenv("DB_PORT", 3306))
+    db_user = os.getenv("DB_USER", "user")
+    db_password = os.getenv("DB_PASSWORD", "userpassword")
+    db_name = os.getenv("DB_NAME", "culturallm_db")
+
+    init_pool(
+        host=db_host,
+        port=db_port,
+        user=db_user,
+        password=db_password,
+        database=db_name
+    )
 
 @pytest.mark.order(1)
 def test_signup():

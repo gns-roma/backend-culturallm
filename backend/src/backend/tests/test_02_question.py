@@ -1,6 +1,9 @@
 from fastapi.testclient import TestClient
 import pytest
 from typing import List
+from endpoints.answers.models import AnswerValues
+from endpoints.validate.models import RatingValues
+from endpoints.questions.models import QuestionValues
 
 from backend import app
 
@@ -75,9 +78,10 @@ def test_login():
 @pytest.mark.order(5)
 def test_submit_question():
     for header in headers:
-        response = client.post("/questions/", params={"question": "Domanda di cultura generale", "topic": "arte", "type": "human"}, headers=header)
+        payload = {"question": "Domanda di cultura generale", "topic": "arte"}
+        response = client.post("/questions/", params={"type":"human"}, json=payload, headers=header)
         assert response.status_code == 201
-        response = client.post("/questions/", params={"question": "Domanda di cultura generale ma senza headers", "topic": "arte", "type": "human"})
+        response = client.post("/questions/", params={"type": "human"}, json = payload)
         assert response.status_code == 401
 
 @pytest.mark.order(6)
@@ -87,10 +91,8 @@ def test_answer_to_question():
             response = client.get("/questions/random/to_answer", headers=header)
             assert response.status_code == 200
             question_id = response.json()["id"]
-            response = client.post("/answers/", params={
-            "answer": f"{j+1}° Risposta generica dell'{i+1}° utente a una domanda generica di cultura generale.",
-            "question_id": question_id,
-            "type": "human"}, headers=header)
+            payload = {"answer":f"{j+1}° Risposta generica dell'{i+1}° utente a una domanda generica di cultura generale.", "question_id":question_id}
+            response = client.post("/answers/", params={"type": "human"}, json = payload, headers=header)
             assert response.status_code == 201
 
 @pytest.mark.order(7)
@@ -111,12 +113,8 @@ def test_get_answers_and_validate():
                 for answer in answers:
                     answer_id = answer["id"]
                     answer_ids.append(answer_id)
-                    rating_response = client.post("/validation/rating", params={
-                        "rating": 5,
-                        "answer_id": answer_id,
-                        "question_id": question_id,
-                        "flag_ia": False
-                    }, headers=header)
+                    payload = {"rating":5, "answer_id":answer_id, "question_id":question_id, "flag_ia":False}
+                    rating_response = client.post("/validation/rating", json=payload, headers=header)
                     assert rating_response.status_code == 201
     
 @pytest.mark.order(8)

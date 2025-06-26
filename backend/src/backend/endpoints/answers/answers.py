@@ -5,14 +5,14 @@ import mariadb
 from db.mariadb import db_connection, execute_query
 from endpoints.auth.auth import get_current_user
 from endpoints.validate.models import Rating
+from endpoints.answers.models import AnswerValues
 
 
 router = APIRouter(prefix="/answers", tags=["answers"])
 
 @router.post("/")
 def submit_answer(
-    answer: str,
-    question_id: int,
+    data : AnswerValues,
     db: Annotated[mariadb.Connection, Depends(db_connection)],
     current_user: Annotated[Optional[str], Depends(get_current_user)] = None,
     type: Literal["human", "llm"] = "human"
@@ -35,9 +35,9 @@ def submit_answer(
         FROM questions 
         WHERE id = ?
     """
-    question_check = execute_query(db, question_query, (question_id,), fetchone=True)
+    question_check = execute_query(db, question_query, (data.question_id,), fetchone=True)
     print(question_check, flush=True)
-    print(f"Question check for id={question_id}: {question_check}")
+    print(f"Question check for id={data.question_id}: {question_check}")
     if not question_check:
         raise HTTPException(status_code=404, detail="Domanda non trovata")
 
@@ -45,7 +45,7 @@ def submit_answer(
         INSERT INTO answers (question_id, username, type, answer, timestamp) 
         VALUES (?, ?, ?, ?, NOW())
     """
-    params = (question_id, username, type, answer)
+    params = (data.question_id, username, type, data.answer)
 
     try:
         execute_query(db, insert_query, params, fetch=False)

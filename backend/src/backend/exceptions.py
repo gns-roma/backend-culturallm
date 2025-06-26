@@ -54,4 +54,4 @@ def request_validation_exception_handler(request: Request, exc: RequestValidatio
     if field:
         response["field"] = field
 
-    return JSONResponse(status_code=400, content=response)
+    return JSONResponse(status_code=422, content=response)

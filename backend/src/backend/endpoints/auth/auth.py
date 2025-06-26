@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jwt import InvalidTokenError
 import mariadb
+from exceptions import handle_exceptions, Error
 from crypto.jwt import create_access_token, create_refresh_token, decode_access_token, decode_refresh_token
 from db.mariadb import db_connection, execute_query
 from endpoints.auth.models import RefreshTokenRequest, SignupRequest, Token
@@ -28,7 +29,18 @@ def get_current_user(token : Annotated[str, Depends(oauth2_scheme)]) -> str:
         raise credentials_exception
     return username
 
-@router.post("/login")
+
+@router.post("/login", responses={
+    401: {
+        "model": Error,
+        "description": "Email o password errati",
+    },
+    422: {
+        "model": Error,
+        "description": "Errore di validazione dei dati di input"
+    }
+})
+@handle_exceptions()
 def login(
     data: Annotated[OAuth2PasswordRequestForm, Depends()], 
     conn: mariadb.Connection = Depends(db_connection)
@@ -62,7 +74,17 @@ def login(
     )
 
 
-@router.post("/signup")
+@router.post("/signup", responses={
+    400: {
+        "model": Error,
+        "description": "Username o email già registrati",
+    },
+    422: {
+        "model": Error,
+        "description": "Errore di validazione dei dati di input",
+    }
+})
+@handle_exceptions()
 def signup(data: SignupRequest, conn: Annotated[mariadb.Connection, Depends(db_connection)]) -> Token:
     salt_pwd = get_salt(16)
     salt_hex = salt_pwd.hex()
@@ -92,10 +114,20 @@ def signup(data: SignupRequest, conn: Annotated[mariadb.Connection, Depends(db_c
     )
 
 
-@router.post("/refresh")
+@router.post("/refresh", responses={
+    422: {
+        "model": Error,
+        "description": "Errore di validazione dei dati di input",
+    },
+    401: {
+        "model": Error,
+        "description": "Token non valido",
+    },
+})
+@handle_exceptions()
 def refresh_token(request: RefreshTokenRequest):
     if not request.refresh_token:
-        raise HTTPException(status_code=400, detail="Refresh token non fornito")
+        raise HTTPException(status_code=422, detail="Refresh token non fornito")
 
     payload = decode_refresh_token(request.refresh_token)
     username = payload.get("sub")

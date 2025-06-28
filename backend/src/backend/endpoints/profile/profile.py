@@ -1,7 +1,7 @@
 from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Response
 import mariadb
-from backend.src.backend.endpoints.profile.models import UpdateUserData
+from endpoints.profile.models import UpdateUserData
 from endpoints.auth.auth import get_current_user
 from db.mariadb import db_connection, execute_query
 

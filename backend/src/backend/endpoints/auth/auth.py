@@ -3,9 +3,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jwt import InvalidTokenError
 import mariadb
-from crypto.jwt import create_access_token, decode_access_token
+from exceptions import handle_exceptions, Error
+from crypto.jwt import create_access_token, create_refresh_token, decode_access_token, decode_refresh_token
 from db.mariadb import db_connection, execute_query
-from endpoints.auth.models import SignupRequest, Token
+from endpoints.auth.models import RefreshTokenRequest, SignupRequest, Token
 from crypto.password import get_salt, hash_password, verify_password
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -28,7 +29,18 @@ def get_current_user(token : Annotated[str, Depends(oauth2_scheme)]) -> str:
         raise credentials_exception
     return username
 
-@router.post("/login")
+
+@router.post("/login", responses={
+    401: {
+        "model": Error,
+        "description": "Email o password errati",
+    },
+    422: {
+        "model": Error,
+        "description": "Errore di validazione dei dati di input"
+    }
+})
+@handle_exceptions()
 def login(
     data: Annotated[OAuth2PasswordRequestForm, Depends()], 
     conn: mariadb.Connection = Depends(db_connection)
@@ -55,10 +67,24 @@ def login(
     """
     execute_query(conn, update_query, (data.username,), fetch=False)
 
-    return Token(access_token=create_access_token({"sub": data.username}), token_type="bearer")
+    return Token(
+        access_token=create_access_token({"sub": data.username}), 
+        refresh_token=create_refresh_token({"sub": data.username}),
+        token_type="bearer"
+    )
 
 
-@router.post("/signup")
+@router.post("/signup", responses={
+    400: {
+        "model": Error,
+        "description": "Username o email già registrati",
+    },
+    422: {
+        "model": Error,
+        "description": "Errore di validazione dei dati di input",
+    }
+})
+@handle_exceptions()
 def signup(data: SignupRequest, conn: Annotated[mariadb.Connection, Depends(db_connection)]) -> Token:
     salt_pwd = get_salt(16)
     salt_hex = salt_pwd.hex()
@@ -81,4 +107,35 @@ def signup(data: SignupRequest, conn: Annotated[mariadb.Connection, Depends(db_c
     """
     execute_query(conn, insert_query, (data.username, data.email, pwd_hash, salt_hex), fetch=False)
 
-    return Token(access_token=create_access_token({"sub": data.username}), token_type="bearer")
+    return Token(
+        access_token=create_access_token({"sub": data.username}), 
+        refresh_token=create_refresh_token({"sub": data.username}),
+        token_type="bearer"
+    )
+
+
+@router.post("/refresh", responses={
+    422: {
+        "model": Error,
+        "description": "Errore di validazione dei dati di input",
+    },
+    401: {
+        "model": Error,
+        "description": "Token non valido",
+    },
+})
+@handle_exceptions()
+def refresh_token(request: RefreshTokenRequest):
+    if not request.refresh_token:
+        raise HTTPException(status_code=422, detail="Refresh token non fornito")
+
+    payload = decode_refresh_token(request.refresh_token)
+    username = payload.get("sub")
+    if username is None:
+        raise HTTPException(status_code=401, detail="Token non valido")
+
+    return Token(
+        access_token=create_access_token({"sub": username}),
+        refresh_token=create_refresh_token({"sub": username}),
+        token_type="bearer"
+    )

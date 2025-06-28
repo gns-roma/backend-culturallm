@@ -2,7 +2,7 @@ from typing import Annotated, Literal, Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Response
 import mariadb
 
-from endpoints.questions.models import Question
+from endpoints.questions.models import Question, QuestionValues
 from db.mariadb import db_connection, execute_query
 from endpoints.auth.auth import get_current_user
 from endpoints.answers.models import Answer
@@ -13,8 +13,7 @@ router = APIRouter(prefix="/questions", tags=["questions"])
 
 @router.post("/")
 def submit_question(
-    question: str, 
-    topic: str,
+    data: QuestionValues,
     db: Annotated[mariadb.Connection, Depends(db_connection)],
     current_user: Annotated[Optional[str], Depends(get_current_user)] = None,
     type: Literal["human", "llm"] = "human"
@@ -34,7 +33,8 @@ def submit_question(
         INSERT INTO questions (question, topic, type, username) 
         VALUES (?, ?, ?, ?)
     """
-    params = (question, topic, type, username)
+    # TODO: Inserire subito risposta della IA alla domanda
+    params = (data.question, data.topic, type, username)
 
     #Oppure potremmo inserirla, farla validare e in modo asincrono aggiornare la riga
     try:
@@ -54,16 +54,14 @@ def get_random_question_to_answer(
     """
     Retrieve a random question.
     """    
-
-    if type == "human" and current_user is None:
+    if current_user is None and type == "human":
         raise HTTPException(
             status_code=401,
             detail="Unauthorized: User must be logged in to answer a question.",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
-    username = current_user if type == "human" else None
-
+    if type == "human":
+        username = current_user
     #Ritorna una domanda casuale che non è stata ne scritta ne a cui l'utente ha già risposto
     select_query = """
         SELECT q.id, q.type, q.username, q.question, q.topic, q.cultural_specificity, q.cultural_specificity_notes
@@ -80,8 +78,7 @@ def get_random_question_to_answer(
 
 @router.get("/random")
 def get_random_question(
-    db: Annotated[mariadb.Connection, Depends(db_connection)],
-    type: Literal["human", "llm"] = "human"
+    db: Annotated[mariadb.Connection, Depends(db_connection)]
 ) -> Question:
     """
     Retrieve a random question.

@@ -1,6 +1,7 @@
 from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Response
 import mariadb
+from endpoints.profile.models import UpdateUserData
 from endpoints.auth.auth import get_current_user
 from db.mariadb import db_connection, execute_query
 
@@ -31,27 +32,26 @@ def profile(
 def edit_profile(
     current_user: Annotated[str, Depends(get_current_user)],
     db: Annotated[mariadb.Connection, Depends(db_connection)],
-    email: str | None = None,
-    password: str | None = None
+    data : UpdateUserData
 ) -> Response:
     """
     Edit the profile of the current user.
     """
-    if not email and not password:
+    if not data.email and not data.password:
         raise HTTPException(status_code=400, detail="No fields to update")
 
     update_fields = []
     params = []
 
-    if email:
+    if data.email:
         update_fields.append("email = ?")
-        params.append(email)
+        params.append(data.email)
     
-    if password:
+    if data.password:
         from crypto.password import get_salt, hash_password
         salt_pwd = get_salt(16)
         salt_hex = salt_pwd.hex()
-        pwd_hash = hash_password(password, salt_pwd)
+        pwd_hash = hash_password(data.password, salt_pwd)
 
         update_fields.append("password_hash = ?, salt = ?")
         params.extend([pwd_hash, salt_hex])

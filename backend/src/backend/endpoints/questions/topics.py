@@ -9,6 +9,7 @@ def get_topics():
     """
     Retrieve a list of available topics.
     """
+    # TODO: Rimpiazzare con richiesta di un topic all'IA
     topics = [
         "cibo",
         "sport",

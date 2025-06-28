@@ -54,6 +54,8 @@ def test_signup():
     assert response.status_code == 200
     response = client.post("/auth/signup/", json={"username": "montalbano", "email": "mantalbano@gmail.com", "password": "forzamaggica1927!"})
     assert response.status_code == 200
+    response = client.post("/auth/signup/", json={"username": "montalbano2", "email": "mantalbano2@gmail.com", "password": "forzamaggica192711111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111!"})
+    assert response.status_code == 422
 
 
     

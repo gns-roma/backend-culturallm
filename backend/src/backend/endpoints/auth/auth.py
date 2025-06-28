@@ -1,10 +1,11 @@
 from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from jwt import InvalidTokenError
 import mariadb
+
 from exceptions import handle_exceptions, Error
 from crypto.jwt import create_access_token, create_refresh_token, decode_access_token, decode_refresh_token
+from crypto.models import TokenExpired, TokenInvalid, TokenMissing
 from db.mariadb import db_connection, execute_query
 from endpoints.auth.models import RefreshTokenRequest, SignupRequest, Token
 from crypto.password import get_salt, hash_password, verify_password
@@ -15,18 +16,17 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 
 def get_current_user(token : Annotated[str, Depends(oauth2_scheme)]) -> str:
-    credentials_exception = HTTPException(
-        status_code=401,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
     try:
         payload = decode_access_token(token)
         username = payload.get("sub")
         if username is None:
-            raise credentials_exception
-    except InvalidTokenError:
-        raise credentials_exception
+            raise TokenInvalid("Token non valido")
+    except (TokenExpired, TokenInvalid, TokenMissing) as token_exception:
+        raise HTTPException(
+            status_code=401,
+            detail=str(token_exception),
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     return username
 
 

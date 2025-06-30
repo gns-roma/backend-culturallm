@@ -159,7 +159,7 @@ def get_answers_to_question(question_id: int,
 
 
 
-@router.get("/{question_id}/answer")
+# @router.get("/{question_id}/answer") # La tua route originale
 def get_single_answer_to_question(
     question_id: int,
     db: Annotated[mariadb.Connection, Depends(db_connection)],
@@ -168,35 +168,49 @@ def get_single_answer_to_question(
 ) -> Answer:
     """
     Restituisce UNA risposta alla domanda `question_id` che l'utente
-    corrente non ha creato né già valutato.  
+    corrente non ha creato né già valutato.
     Preferisce la risposta con il minor numero di rating.
     """
 
-    # Se è richiesta una risposta “human” l’utente deve essere loggato
     if type == "human" and current_user is None:
         raise HTTPException(
             status_code=401,
-            detail="Unauthorized: User must be logged in to answer a question.",
+            detail="Unauthorized: User must be logged in for this operation.",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    username = current_user if type == "human" else None
+    username = current_user
 
-    # SQL: ordina per numero di rating ASC, poi casualmente, e limita a 1
     select_query = """
-        SELECT a.id, a.type, a.username, a.question_id, a.answer,
-               (SELECT COUNT(*) FROM ratings r WHERE r.answer_id = a.id) AS rating_count
-        FROM answers a
-        WHERE a.question_id = ? AND (a.username IS NULL OR a.username <> ?) AND a.id NOT IN 
-                (SELECT answer_id FROM ratings WHERE username = ?)
-        ORDER BY rating_count ASC, RAND()
+        SELECT
+            a.id,
+            a.type,
+            a.username,
+            a.question_id,
+            a.answer,
+            COUNT(r_count.id) AS rating_count
+        FROM
+            answers a
+        LEFT JOIN
+            ratings r_user ON a.id = r_user.answer_id AND r_user.username = ?
+        LEFT JOIN
+            ratings r_count ON a.id = r_count.answer_id
+        WHERE
+            a.question_id = ?
+            AND (a.username IS NULL OR a.username <> ?)
+            AND r_user.id IS NULL
+        GROUP BY
+            a.id, a.type, a.username, a.question_id, a.answer
+        ORDER BY
+            rating_count ASC, RAND()
         LIMIT 1
     """
 
     params = (username, question_id, username)
-    row= execute_query(db, select_query, params,fetch=False,fetchone=True, dict=True)
+
+    row = execute_query(db, select_query, params, fetchone=True, dict=True)
 
     if not row:
-        raise HTTPException(status_code=404, detail="No suitable answer found")
-    return Answer(**row)
+        raise HTTPException(status_code=404, detail="No suitable answer found for the given criteria.")
 
+    return Answer(**row)

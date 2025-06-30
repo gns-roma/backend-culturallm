@@ -134,7 +134,7 @@ def get_answers_to_question(question_id: int,
     Retrieve answers to a question by its ID
     """
     """
-    Noi qua prendiamo tutte le risposte a una certa domanda, affinche il current_user le possa validare, 
+    Noi qua prendiamo una risposta casuale a una domanda, affinche il current_user la possa validare, 
     quindi dobbiamo escludere le risposte che l'utente ha scritto oppure che ha già valutato 
     """
     select_query = """
@@ -147,7 +147,7 @@ def get_answers_to_question(question_id: int,
         WHERE a.question_id = ? AND (a.username = ? OR r.username = ?)
     """
     params = (question_id, question_id, username, username)
-    rows = execute_query(db, select_query, params,dict=True)
+    rows = execute_query(db, select_query, params, dict=True)
     if not rows:
         raise HTTPException(status_code=404, detail="No answers found for the question")
     #Noi qua prendiamo tutte le risposte a una certa domanda,
@@ -155,3 +155,53 @@ def get_answers_to_question(question_id: int,
     # filtrare le risposte che l'utente ha scritto lui o che ha già valutato
     #Il modello LLM invece dovrebbe valutare subito una risposta, appena un utente fa il submit
     return [Answer(**row) for row in rows]
+
+
+
+
+@router.get("/{question_id}/answer")
+def get_single_answer_to_question(
+    question_id: int,
+    db: Annotated[mariadb.Connection, Depends(db_connection)],
+    current_user: Annotated[Optional[str], Depends(get_current_user)] = None,
+    type: Literal["human", "llm"] = "human",
+) -> Answer:
+    """
+    Restituisce UNA risposta alla domanda `question_id` che l'utente
+    corrente non ha creato né già valutato.  
+    Preferisce la risposta con il minor numero di rating.
+    """
+
+    # Se è richiesta una risposta “human” l’utente deve essere loggato
+    if type == "human" and current_user is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Unauthorized: User must be logged in to answer a question.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    username = current_user if type == "human" else None
+
+    # SQL: ordina per numero di rating ASC, poi casualmente, e limita a 1
+    select_query = """
+        SELECT a.id, a.type, a.username, a.question_id, a.answer
+        FROM answers AS a
+        LEFT JOIN ratings AS r_user         -- rating dati dall'utente corrente
+            ON a.id = r_user.answer_id AND r_user.username = ?
+        LEFT JOIN ratings AS r_all          -- tutti i rating, per contarli
+            ON a.id = r_all.answer_id
+        WHERE a.question_id = ?
+          AND a.username <> ?               -- esclude risposte scritte dall'utente
+          AND r_user.answer_id IS NULL      -- esclude risposte già valutate dall'utente
+        GROUP BY a.id
+        ORDER BY COUNT(r_all.id) ASC, RAND()
+        LIMIT 1
+    """
+
+    params = (username, question_id, username)
+    row= execute_query(db, select_query, params,fetch=False,fetchone=True, dict=True)
+
+    if not row:
+        raise HTTPException(status_code=404, detail="No suitable answer found")
+    return Answer(**row)
+

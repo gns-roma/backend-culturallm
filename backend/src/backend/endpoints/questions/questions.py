@@ -83,10 +83,10 @@ def get_random_question(
     """
     Retrieve a random question.
     """    
-    #Ritorna una domanda casuale
+    #Ritorna una domanda casuale con almeno una risposta
     select_query = """
         SELECT q.id, q.type, q.username, q.question, q.topic, q.cultural_specificity, q.cultural_specificity_notes
-        FROM questions q
+        FROM questions q JOIN answers a on q.id = a.question_id
         ORDER BY RAND()
         LIMIT 1
         """

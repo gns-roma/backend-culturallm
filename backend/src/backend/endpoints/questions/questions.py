@@ -185,16 +185,15 @@ def get_single_answer_to_question(
     # SQL: ordina per numero di rating ASC, poi casualmente, e limita a 1
     select_query = """
         SELECT a.id, a.type, a.username, a.question_id, a.answer
-        FROM answers AS a
-        LEFT JOIN ratings AS r_user         -- rating dati dall'utente corrente
-            ON a.id = r_user.answer_id AND r_user.username = ?
-        LEFT JOIN ratings AS r_all          -- tutti i rating, per contarli
-            ON a.id = r_all.answer_id
+        FROM answers a
+        LEFT JOIN ratings r ON a.id = r.answer_id
         WHERE a.question_id = ?
-          AND a.username <> ?               -- esclude risposte scritte dall'utente
-          AND r_user.answer_id IS NULL      -- esclude risposte già valutate dall'utente
+          AND (a.username IS NULL OR a.username <> ?)
+          AND a.id NOT IN (
+              SELECT answer_id FROM ratings WHERE username = ?
+          )
         GROUP BY a.id
-        ORDER BY COUNT(r_all.id) ASC, RAND()
+        ORDER BY COUNT(r.id) ASC, RAND()
         LIMIT 1
     """
 

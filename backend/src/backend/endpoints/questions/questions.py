@@ -119,7 +119,7 @@ def get_question(question_id: int, db: Annotated[mariadb.Connection, Depends(db_
 def get_answers_to_question(question_id: int, 
     db: Annotated[mariadb.Connection, Depends(db_connection)],
     current_user: Annotated[Optional[str], Depends(get_current_user)] = None,
-    type: Literal["human", "llm"] = "human")-> Answer:
+    type: Literal["human", "llm"] = "human")-> List[Answer]:
 
     if type == "human" and current_user is None:
         raise HTTPException(
@@ -147,7 +147,7 @@ def get_answers_to_question(question_id: int,
         WHERE a.question_id = ? AND (a.username = ? OR r.username = ?)
     """
     params = (question_id, question_id, username, username)
-    rows = execute_query(db, select_query, params,dict=True)
+    rows = execute_query(db, select_query, params, dict=True)
     if not rows:
         raise HTTPException(status_code=404, detail="No answers found for the question")
     #Noi qua prendiamo tutte le risposte a una certa domanda,
@@ -203,6 +203,5 @@ def get_single_answer_to_question(
 
     if not row:
         raise HTTPException(status_code=404, detail="No suitable answer found")
-
     return Answer(**row)
 

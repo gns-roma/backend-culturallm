@@ -1,12 +1,22 @@
+import hashlib
 from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Response
 import mariadb
+import pydenticon
+from exceptions import Error
 from endpoints.profile.models import UpdateUserData
 from endpoints.auth.auth import get_current_user
 from db.mariadb import db_connection, execute_query
 
 
 router = APIRouter(prefix="/profile", tags=["profile"])
+
+generator = pydenticon.Generator(
+        5, 5,
+        digest=hashlib.sha1,
+        foreground = [ "rgb(128,36,51)" ],
+        background="rgb(255,255,255)",
+    )
 
 
 @router.get("/")
@@ -28,7 +38,7 @@ def profile(
     return result
 
 
-@router.put("/edit")
+@router.put("/edit/")
 def edit_profile(
     current_user: Annotated[str, Depends(get_current_user)],
     db: Annotated[mariadb.Connection, Depends(db_connection)],
@@ -67,3 +77,34 @@ def edit_profile(
     execute_query(db, update_query, tuple(params), fetch=False)
     
     return Response(status_code=204)  # No Content, successful update without returning data
+
+
+
+@router.get("/avatar/", response_class=Response, responses={
+    200: {
+        "content": {
+            "image/png": {
+                "example": "base64_encoded_image_data"
+            }
+        },
+    },
+    401: {
+        "model": Error,
+        "description": "Unauthorized",
+    }
+})
+def get_avatar(
+    current_user: Annotated[str, Depends(get_current_user)]
+) -> Response:
+    """
+    Retrieve the avatar of the current user.
+    """
+    image = generator.generate(
+        data = current_user, 
+        width = 200, 
+        height = 200, 
+        padding = (20, 20, 20, 20),
+        output_format='png'
+    )
+
+    return Response(content=image, media_type="image/png")

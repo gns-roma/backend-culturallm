@@ -93,14 +93,12 @@ def edit_profile(
         "description": "Unauthorized",
     }
 })
-def get_avatar(
-    current_user: Annotated[str, Depends(get_current_user)]
-) -> Response:
+def get_avatar(username: str) -> Response:
     """
     Retrieve the avatar of the current user.
     """
     image = generator.generate(
-        data = current_user, 
+        data = username, 
         width = 200, 
         height = 200, 
         padding = (20, 20, 20, 20),

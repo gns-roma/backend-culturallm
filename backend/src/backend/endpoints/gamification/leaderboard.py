@@ -20,7 +20,7 @@ def get_best_leaderboard(db: Annotated[mariadb.Connection, Depends(db_connection
 
 @router.get("/")
 def get_leaderboard(db: Annotated[mariadb.Connection, Depends(db_connection)])->List[User]:
-    select_query = """SELECT username, score FROM leaderboard ORDER BY score"""
+    select_query = """SELECT username, score FROM leaderboard ORDER BY score ASC"""
     users = execute_query(db, select_query, dict = True)
     if not users:
         raise HTTPException(status_code=404, detail="No users found")

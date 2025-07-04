@@ -66,7 +66,8 @@ def get_random_question_to_answer(
     select_query = """
         SELECT q.id, q.type, q.username, q.question, q.topic, q.cultural_specificity, q.cultural_specificity_notes
         FROM questions q
-        WHERE q.username != ? AND q.id NOT IN (SELECT question_id FROM answers WHERE username = ?)
+        WHERE (q.type = 'llm' AND q.id NOT IN (SELECT question_id FROM answers WHERE username = ?)) 
+        OR (q.username != ? AND q.id NOT IN (SELECT question_id FROM answers WHERE username = ?))
         ORDER BY RAND()
         LIMIT 1
         """

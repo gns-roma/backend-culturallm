@@ -39,7 +39,7 @@ def get_user_position(
             detail="Unauthorized: User must be logged in to get their position.",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    username = current_user if type == "human" else None
+    username = current_user
     select_query = """
     SELECT username, score, (
         SELECT COUNT(*) + 1

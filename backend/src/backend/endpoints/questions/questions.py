@@ -225,4 +225,9 @@ def get_single_answer_to_question(
 
     if not row:
         raise HTTPException(status_code=404, detail="No suitable answer found for the given criteria.")
-    return RatingRequest(**row)
+    print(row)
+    try:
+        return RatingRequest(**row)
+    except Exception as e:
+        print(f"Errore durante la creazione del RatingRequest: {e}")
+        raise HTTPException(status_code=422, detail="Errore interno durante la creazione della richiesta di rating.")

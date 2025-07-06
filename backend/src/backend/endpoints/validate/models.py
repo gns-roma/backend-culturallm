@@ -3,8 +3,8 @@ from pydantic import BaseModel, Field
 class RatingRequest(BaseModel):
     question: str
     question_id: int
-    answer_id: int
     answer: str
+    answer_id: int
     topic: str
 
 

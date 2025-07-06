@@ -184,7 +184,7 @@ def get_answers_to_question(question_id: int,
 
 
 
-# @router.get("/{question_id}/answer") # La tua route originale
+@router.get("/{question_id}/answer") # La tua route originale
 def get_single_answer_to_question(
     question_id: int,
     db: Annotated[mariadb.Connection, Depends(db_connection)],

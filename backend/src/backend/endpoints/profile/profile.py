@@ -1,6 +1,6 @@
 import hashlib
-from typing import Annotated
-from fastapi import APIRouter, Depends, HTTPException, Response
+from typing import Annotated, Optional
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 import mariadb
 import pydenticon
 from exceptions import Error
@@ -88,14 +88,13 @@ def edit_profile(
             }
         },
     },
-    401: {
-        "model": Error,
-        "description": "Unauthorized",
+    422: {
+        "model": Error
     }
 })
-def get_avatar(username: str) -> Response:
+def get_avatar(username: str = Query(...)) -> Response:
     """
-    Retrieve the avatar of the current user.
+    Retrieve the avatar of the user.
     """
     image = generator.generate(
         data = username, 

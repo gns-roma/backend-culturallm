@@ -6,6 +6,7 @@ from endpoints.questions.models import Question, QuestionValues
 from db.mariadb import db_connection, execute_query
 from endpoints.auth.auth import get_current_user
 from endpoints.answers.models import Answer
+from endpoints.validate.models import RatingRequest
 
 
 router = APIRouter(prefix="/questions", tags=["questions"])
@@ -184,15 +185,14 @@ def get_answers_to_question(question_id: int,
 
 
 
-@router.get("/{question_id}/answer") # La tua route originale
+@router.get("/qa_to_validate") # La tua route originale
 def get_single_answer_to_question(
-    question_id: int,
     db: Annotated[mariadb.Connection, Depends(db_connection)],
     current_user: Annotated[Optional[str], Depends(get_current_user)] = None,
     type: Literal["human", "llm"] = "human",
-) -> Answer:
+) -> RatingRequest:
     """
-    Restituisce UNA risposta alla domanda `question_id` che l'utente
+    Restituisce UNA tupla domanda, risposta, topic che l'utente
     corrente non ha creato né già valutato.
     Preferisce la risposta con il minor numero di rating.
     """
@@ -207,23 +207,22 @@ def get_single_answer_to_question(
     username = current_user
 
     select_query = """
-    SELECT a.id, a.type, u.username, a.question_id, a.answer, COUNT(r.id) AS rating_count
-    FROM answers AS a LEFT JOIN users AS u ON a.user_id = u.id LEFT JOIN ratings AS r ON a.id = r.answer_id
-    WHERE a.question_id = ?
-    AND (a.user_id IS NULL OR a.user_id != (SELECT id FROM users WHERE username = ?))
+    SELECT q.question,a.answer,q.topic
+    FROM answers AS a INNER JOIN questions AS q ON a.question_id = q.id LEFT JOIN ratings AS r ON a.id = r.answer_id
+    WHERE (a.user_id IS NULL OR a.user_id != (SELECT id FROM users WHERE username = ?))
     AND NOT EXISTS (
         SELECT 1
-        FROM ratings r_check
+        FROM ratings AS r_check
         WHERE r_check.answer_id = a.id
         AND r_check.user_id = (SELECT id FROM users WHERE username = ?))
-    GROUP BY a.id, a.type, u.username, a.question_id, a.answer
-    ORDER BY rating_count ASC, RAND()
+    GROUP BY a.id, q.question, a.answer, q.topic
+    ORDER BY COUNT(r.id) ASC, RAND()
     LIMIT 1;"""
-    params = (question_id, username, username)
+    params = (username, username)
 
 
     row = execute_query(db, select_query, params, fetchone=True, dict=True)
 
     if not row:
         raise HTTPException(status_code=404, detail="No suitable answer found for the given criteria.")
-    return Answer(**row)
+    return RatingRequest(**row)

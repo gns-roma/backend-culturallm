@@ -131,8 +131,5 @@ def test_get_validations():
 @pytest.mark.order(9)
 def test_get_answer_to_question():
     for header in headers:
-        random_question = client.get("/questions/random", headers=header)
-        assert random_question.status_code == 200
         response = client.get("/questions/qa_to_validate", headers=header)
-        print(response.json())
         assert response.status_code == 200

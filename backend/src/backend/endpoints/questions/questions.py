@@ -207,7 +207,7 @@ def get_single_answer_to_question(
     username = current_user
 
     select_query = """
-    SELECT q.question, a.question_id, a.answer, a.id AS answer_id, q.topic
+    SELECT a.id AS answer_id, a.question_id AS question_id, a.answer, q.question, q.topic
     FROM answers AS a INNER JOIN questions AS q ON a.question_id = q.id LEFT JOIN ratings AS r ON a.id = r.answer_id
     WHERE (a.user_id IS NULL OR a.user_id != (SELECT id FROM users WHERE username = ?))
     AND NOT EXISTS (
@@ -225,6 +225,8 @@ def get_single_answer_to_question(
     row["question_id"] = int(row["question_id"])
     try:
         rating_request = RatingRequest(**row)
-    except Exception as e:
+    except ValueError as e:
+        # Gestione dell'errore se la conversione fallisce
         raise HTTPException(status_code=422, detail=f"Invalid data format: {e}, row: {row}, question_id type: {type(row['question_id'])}")
+
     return rating_request

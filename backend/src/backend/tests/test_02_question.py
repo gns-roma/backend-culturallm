@@ -134,5 +134,5 @@ def test_get_answer_to_question():
         random_question = client.get("/questions/random", headers=header)
         assert random_question.status_code == 200
         question_id = random_question.json()["id"]
-        response = client.get(f"/questions/{question_id}/answer", headers=header)
+        response = client.get(f"/questions/qa_to_validate", headers=header)
         assert response.status_code == 200

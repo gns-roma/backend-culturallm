@@ -207,7 +207,7 @@ def get_single_answer_to_question(
     username = current_user
 
     select_query = """
-    SELECT q.question,a.answer,q.topic
+    SELECT q.question, q.id, a.answer, a.id, q.topic
     FROM answers AS a INNER JOIN questions AS q ON a.question_id = q.id LEFT JOIN ratings AS r ON a.id = r.answer_id
     WHERE (a.user_id IS NULL OR a.user_id != (SELECT id FROM users WHERE username = ?))
     AND NOT EXISTS (

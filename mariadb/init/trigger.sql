@@ -6,9 +6,9 @@ CREATE OR REPLACE TRIGGER trg_logs_questions
 AFTER INSERT ON questions
 FOR EACH ROW
 BEGIN
-  IF NEW.username IS NOT NULL THEN
-    INSERT IGNORE INTO logs (username, score, action_type, timestamp)
-    VALUES (NEW.username, NEW.cultural_specificity, 'question', NOW());
+  IF NEW.user_id IS NOT NULL THEN
+    INSERT IGNORE INTO logs (user_id, score, action_type, timestamp)
+    VALUES (NEW.user_id, NEW.cultural_specificity, 'question', NOW());
   END IF;
 END;//
 DELIMITER ;
@@ -19,9 +19,9 @@ CREATE OR REPLACE TRIGGER trg_logs_answer
 AFTER INSERT ON answers
 FOR EACH ROW
 BEGIN
-  IF NEW.username IS NOT NULL THEN
-    INSERT IGNORE INTO logs (username, score, action_type, timestamp)
-    VALUES (NEW.username, 0, 'answer', NOW());
+  IF NEW.user_id IS NOT NULL THEN
+    INSERT IGNORE INTO logs (user_id, score, action_type, timestamp)
+    VALUES (NEW.user_id, 0, 'answer', NOW());
   END IF;
 END;//
 DELIMITER ;
@@ -32,13 +32,13 @@ CREATE OR REPLACE TRIGGER trg_logs_ratings
 AFTER INSERT ON ratings
 FOR EACH ROW
 BEGIN
-  DECLARE answer_author VARCHAR(255);
+  DECLARE answer_author INT DEFAULT NULL;
   DECLARE final_score   INT DEFAULT 0;
 
-  SELECT username
+  SELECT user_id
   INTO answer_author
   FROM answers
-  WHERE id = NEW.answer_id
+  WHERE id = NEW.answer_id AND type = 'human'
   LIMIT 1;
 
 
@@ -55,7 +55,7 @@ BEGIN
       SET final_score = final_score + 1;
     END IF;
 
-    INSERT INTO logs (username, score, action_type, timestamp)
+    INSERT INTO logs (user_id, score, action_type, timestamp)
     VALUES (answer_author, final_score, 'rating', NOW());
   END IF;
 END;//
@@ -67,14 +67,14 @@ CREATE OR REPLACE TRIGGER trg_leaderboard_update
 AFTER INSERT ON logs
 FOR EACH ROW
 BEGIN
-  INSERT IGNORE INTO leaderboard (username, score, num_ratings, num_questions, num_answers)
-  VALUES (NEW.username, 0, 0, 0, 0);
+  INSERT IGNORE INTO leaderboard (user_id, score, num_ratings, num_questions, num_answers)
+  VALUES (NEW.user_id, 0, 0, 0, 0);
 
   UPDATE leaderboard
   SET score        = score + NEW.score,
       num_ratings  = num_ratings  + CASE WHEN NEW.action_type = 'rating'  THEN 1 ELSE 0 END,
       num_questions= num_questions+ CASE WHEN NEW.action_type = 'question' THEN 1 ELSE 0 END,
       num_answers  = num_answers  + CASE WHEN NEW.action_type = 'answer'  THEN 1 ELSE 0 END
-  WHERE username = NEW.username;
+  WHERE user_id = NEW.user_id;
 END;//
 DELIMITER ;

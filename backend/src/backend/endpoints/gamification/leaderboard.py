@@ -10,7 +10,9 @@ router = APIRouter(prefix="/leaderboard", tags=["leaderboard"])
 @router.get("/best")
 def get_best_leaderboard(db: Annotated[mariadb.Connection, Depends(db_connection)])-> List[User]:
     select_query = """
-    SELECT username, score FROM leaderboard ORDER BY score DESC LIMIT 10"""
+    SELECT u.username, l.score 
+    FROM leaderboard l JOIN users u ON l.user_id = u.id 
+    ORDER BY score DESC LIMIT 10"""
     users = execute_query(db, select_query, dict = True)
     if not users:
         raise HTTPException(status_code=404, detail="No users found")
@@ -22,7 +24,7 @@ def get_best_leaderboard(db: Annotated[mariadb.Connection, Depends(db_connection
 def get_leaderboard(db: Annotated[mariadb.Connection, Depends(db_connection)])->List[User]:
     select_query = """
     SELECT u.username, COALESCE(l.score, 0) AS score
-    FROM   users AS u LEFT JOIN leaderboard AS l USING(username)
+    FROM   users u LEFT JOIN leaderboard AS l ON u.id = l.user_id
     ORDER BY score DESC"""
     users = execute_query(db, select_query, dict = True)
     if not users:
@@ -44,12 +46,12 @@ def get_user_position(
         )
     username = current_user
     select_query = """
-    SELECT username, score,
+    SELECT u.username, l.score,
         (SELECT COUNT(*) + 1
          FROM leaderboard
          WHERE score > l.score) AS position
-    FROM leaderboard l
-    WHERE username = ?
+    FROM leaderboard l JOIN users u ON l.user_id = u.id
+    WHERE u.username = ?
     UNION ALL
     SELECT username, 0, NULL
     FROM users

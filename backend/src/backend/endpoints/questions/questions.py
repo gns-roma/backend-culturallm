@@ -29,12 +29,25 @@ def submit_question(
     # che due utenti scrivano la stessa domanda
     # TODO: Nella query dovremo anche inserire la valutazione dell'IA della domanda che deve essere un 
     # integer da 1 a 10, più un commento opzionale sulla domanda
+    query_user = """
+        SELECT id
+        FROM users 
+        WHERE username = ?
+    """
+    params_user = (username,) if username else (None,)
+    try:
+        user_check = execute_query(db, query_user, params_user, fetchone=True, dict=True)
+    except Exception as e:
+        print(f"Errore durante l'inserimento risposta: {e}")
+        raise HTTPException(status_code=500, detail="Errore interno durante l'inserimento della risposta")
+
+    user_id = user_check['id'] if user_check else None
     insert_query = """
-        INSERT INTO questions (question, topic, type, username) 
+        INSERT INTO questions (question, topic, type, user_id) 
         VALUES (?, ?, ?, ?)
     """
     # TODO: Inserire subito risposta della IA alla domanda
-    params = (data.question, data.topic, type, username)
+    params = (data.question, data.topic, type, user_id)
 
     #Oppure potremmo inserirla, farla validare e in modo asincrono aggiornare la riga
     try:
@@ -63,14 +76,19 @@ def get_random_question_to_answer(
     if type == "human":
         username = current_user
     #Ritorna una domanda casuale che non è stata ne scritta ne a cui l'utente ha già risposto
+
     select_query = """
-        SELECT q.id, q.type, q.username, q.question, q.topic, q.cultural_specificity, q.cultural_specificity_notes
-        FROM questions q
-        WHERE q.username != ? AND q.id NOT IN (SELECT question_id FROM answers WHERE username = ?)
-        ORDER BY RAND()
-        LIMIT 1
-        """
-    params = (username, username)
+    SELECT  q.id, q.type, u.username, q.question, q.topic, q.cultural_specificity, q.cultural_specificity_notes
+    FROM    questions q LEFT JOIN users u ON u.id = q.user_id
+    WHERE   ( ? IS NULL OR q.user_id IS NULL OR q.user_id <> (SELECT id FROM users WHERE username = ?) )
+    AND   q.id NOT IN (                                     
+        SELECT a.question_id
+        FROM   answers a
+        WHERE  a.user_id = (SELECT id FROM users WHERE username = ?))
+    ORDER BY RAND()
+    LIMIT 1
+    """
+    params = (username, username, username)
     row = execute_query(db, select_query, params, fetchone=True, dict=True)
     if row is None:
         raise HTTPException(status_code=404, detail="Nessuna domanda disponibile.")
@@ -83,13 +101,13 @@ def get_random_question(
     """
     Retrieve a random question.
     """    
-    #Ritorna una domanda casuale
+    #Ritorna una domanda casuale con almeno una risposta
     select_query = """
-        SELECT q.id, q.type, q.username, q.question, q.topic, q.cultural_specificity, q.cultural_specificity_notes
-        FROM questions q
-        ORDER BY RAND()
-        LIMIT 1
-        """
+    SELECT  q.id,q.type,u.username,q.question,q.topic,q.cultural_specificity,q.cultural_specificity_notes
+    FROM    questions q JOIN answers a ON a.question_id = q.id LEFT JOIN users u ON u.id = q.user_id
+    ORDER BY RAND()
+    LIMIT 1
+    """
     row = execute_query(db, select_query, fetchone=True, dict=True)
     if row is None:
         raise HTTPException(status_code=404, detail="Nessuna domanda disponibile.")
@@ -102,13 +120,13 @@ def get_question(question_id: int, db: Annotated[mariadb.Connection, Depends(db_
     """
     Retrieve a question by its ID.
     """
-    select_query = """
-        SELECT id, type, username, question, topic, cultural_specificity, cultural_specificity_notes 
-        FROM questions 
-        WHERE id = ?
+    query = """
+    SELECT  q.id, q.type, u.username, q.question, q.topic, q.cultural_specificity, q.cultural_specificity_notes
+    FROM    questions q LEFT JOIN users u ON u.id = q.user_id
+    WHERE   q.id = ?
     """
     params = (question_id,)
-    row = execute_query(db, select_query, params,fetchone=True, dict=True)
+    row = execute_query(db, query, params,fetchone=True, dict=True)
     if not row:
         raise HTTPException(status_code=404, detail="Nessuna domanda trovata")
     return Question(**row)
@@ -138,15 +156,22 @@ def get_answers_to_question(question_id: int,
     quindi dobbiamo escludere le risposte che l'utente ha scritto oppure che ha già valutato 
     """
     select_query = """
-        SELECT id, type, username, question_id, answer
-        FROM answers
-        WHERE question_id = ?
-        EXCEPT
-        SELECT a.id, a.type, a.username, a.question_id, a.answer
-        FROM answers a LEFT JOIN ratings r ON a.id = r.answer_id
-        WHERE a.question_id = ? AND (a.username = ? OR r.username = ?)
+    SELECT  a.id, a.type, u.username, a.question_id, a.answer, COUNT(r_all.id) AS rating_count
+    FROM    answers a LEFT JOIN users   u      ON u.id  = a.user_id            
+    LEFT JOIN ratings r_all  ON r_all.answer_id = a.id      
+    WHERE   a.question_id = ? 
+    AND   ( ? IS NULL OR a.user_id IS NULL OR a.user_id <> (SELECT id FROM users WHERE username = ?) )
+    AND   NOT EXISTS (                                     
+        SELECT 1
+        FROM   ratings r_me
+        WHERE  r_me.answer_id = a.id
+          AND  r_me.user_id   = (SELECT id FROM users WHERE username = ?)
+    )
+    GROUP BY a.id, a.type, u.username, a.question_id, a.answer
+    ORDER BY rating_count ASC, RAND()
     """
-    params = (question_id, question_id, username, username)
+
+    params = (question_id, username, username, username)
     rows = execute_query(db, select_query, params, dict=True)
     if not rows:
         raise HTTPException(status_code=404, detail="No answers found for the question")
@@ -159,7 +184,7 @@ def get_answers_to_question(question_id: int,
 
 
 
-# @router.get("/{question_id}/answer") # La tua route originale
+@router.get("/{question_id}/answer") # La tua route originale
 def get_single_answer_to_question(
     question_id: int,
     db: Annotated[mariadb.Connection, Depends(db_connection)],
@@ -182,35 +207,23 @@ def get_single_answer_to_question(
     username = current_user
 
     select_query = """
-        SELECT
-            a.id,
-            a.type,
-            a.username,
-            a.question_id,
-            a.answer,
-            COUNT(r_count.id) AS rating_count
-        FROM
-            answers a
-        LEFT JOIN
-            ratings r_user ON a.id = r_user.answer_id AND r_user.username = ?
-        LEFT JOIN
-            ratings r_count ON a.id = r_count.answer_id
-        WHERE
-            a.question_id = ?
-            AND (a.username IS NULL OR a.username <> ?)
-            AND r_user.id IS NULL
-        GROUP BY
-            a.id, a.type, a.username, a.question_id, a.answer
-        ORDER BY
-            rating_count ASC, RAND()
-        LIMIT 1
-    """
+    SELECT a.id, a.type, u.username, a.question_id, a.answer, COUNT(r.id) AS rating_count
+    FROM answers AS a LEFT JOIN users AS u ON a.user_id = u.id LEFT JOIN ratings AS r ON a.id = r.answer_id
+    WHERE a.question_id = ?
+    AND (a.user_id IS NULL OR a.user_id != (SELECT id FROM users WHERE username = ?))
+    AND NOT EXISTS (
+        SELECT 1
+        FROM ratings r_check
+        WHERE r_check.answer_id = a.id
+        AND r_check.user_id = (SELECT id FROM users WHERE username = ?))
+    GROUP BY a.id, a.type, u.username, a.question_id, a.answer
+    ORDER BY rating_count ASC, RAND()
+    LIMIT 1;"""
+    params = (question_id, username, username)
 
-    params = (username, question_id, username)
 
     row = execute_query(db, select_query, params, fetchone=True, dict=True)
 
     if not row:
         raise HTTPException(status_code=404, detail="No suitable answer found for the given criteria.")
-
     return Answer(**row)

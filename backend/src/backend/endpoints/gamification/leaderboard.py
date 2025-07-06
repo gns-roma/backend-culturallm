@@ -10,7 +10,9 @@ router = APIRouter(prefix="/leaderboard", tags=["leaderboard"])
 @router.get("/best")
 def get_best_leaderboard(db: Annotated[mariadb.Connection, Depends(db_connection)])-> List[User]:
     select_query = """
-    SELECT username, score FROM leaderboard ORDER BY score DESC LIMIT 10"""
+    SELECT u.username, l.score 
+    FROM leaderboard l JOIN users u ON l.user_id = u.id 
+    ORDER BY score DESC LIMIT 10"""
     users = execute_query(db, select_query, dict = True)
     if not users:
         raise HTTPException(status_code=404, detail="No users found")
@@ -20,7 +22,10 @@ def get_best_leaderboard(db: Annotated[mariadb.Connection, Depends(db_connection
 
 @router.get("/")
 def get_leaderboard(db: Annotated[mariadb.Connection, Depends(db_connection)])->List[User]:
-    select_query = """SELECT username, score FROM leaderboard ORDER BY score"""
+    select_query = """
+    SELECT u.username, COALESCE(l.score, 0) AS score
+    FROM   users u LEFT JOIN leaderboard AS l ON u.id = l.user_id
+    ORDER BY score DESC"""
     users = execute_query(db, select_query, dict = True)
     if not users:
         raise HTTPException(status_code=404, detail="No users found")
@@ -39,14 +44,19 @@ def get_user_position(
             detail="Unauthorized: User must be logged in to get their position.",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    username = current_user if type == "human" else None
+    username = current_user
     select_query = """
-    SELECT username, score, (
-        SELECT COUNT(*) + 1
-        FROM leaderboard
-        WHERE score > (SELECT score FROM leaderboard WHERE username = ?)) AS position
-    FROM leaderboard
-    WHERE username = ?"""
+    SELECT u.username, l.score,
+        (SELECT COUNT(*) + 1
+         FROM leaderboard
+         WHERE score > l.score) AS position
+    FROM leaderboard l JOIN users u ON l.user_id = u.id
+    WHERE u.username = ?
+    UNION ALL
+    SELECT username, 0, NULL
+    FROM users
+    WHERE username = ? AND username NOT IN (SELECT username FROM leaderboard)
+    """
     user = execute_query(db, select_query, (username, username),fetchone=True, dict=True)
     if not user:
         raise HTTPException(status_code=404, detail="No user found")

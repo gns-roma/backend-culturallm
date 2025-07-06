@@ -40,12 +40,25 @@ def submit_answer(
     print(f"Question check for id={data.question_id}: {question_check}")
     if not question_check:
         raise HTTPException(status_code=404, detail="Domanda non trovata")
+    query_user = """
+        SELECT id
+        FROM users 
+        WHERE username = ?
+    """
+    params_user = (username,) if username else (None,)
+    try:
+        user_check = execute_query(db, query_user, params_user, fetchone=True, dict=True)
+    except Exception as e:
+        print(f"Errore durante l'inserimento risposta: {e}")
+        raise HTTPException(status_code=500, detail="Errore interno durante l'inserimento della risposta")
+
+    user_id = user_check['id'] if user_check else None
 
     insert_query = """
-        INSERT INTO answers (question_id, username, type, answer, timestamp) 
+        INSERT INTO answers (question_id, user_id, type, answer, timestamp) 
         VALUES (?, ?, ?, ?, NOW())
     """
-    params = (data.question_id, username, type, data.answer)
+    params = (data.question_id, user_id, type, data.answer)
 
     try:
         execute_query(db, insert_query, params, fetch=False)
@@ -60,8 +73,8 @@ def get_validations_to_answer(answer_id: int, db: Annotated[mariadb.Connection, 
     Retrieve ratings by its answer_ID.
     """
     select_query = """
-        SELECT id, answer_id,question_id, username, rating, flag_ia 
-        FROM ratings
+        SELECT r.id, r.answer_id, r.question_id, u.username, r.rating, r.flag_ia 
+        FROM ratings r JOIN users u ON r.user_id = u.id
         WHERE answer_id = ?
     """
     params = (answer_id,)

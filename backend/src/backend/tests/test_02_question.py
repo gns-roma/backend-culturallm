@@ -126,3 +126,13 @@ def test_get_validations():
             validations = validations_response.json()
             assert isinstance(validations, List)
             print(f"Validations for answer {answer_id}:", validations)
+
+
+@pytest.mark.order(9)
+def test_get_answer_to_question():
+    for header in headers:
+        random_question = client.get("/questions/random", headers=header)
+        assert random_question.status_code == 200
+        question_id = random_question.json()["id"]
+        response = client.get(f"/questions/{question_id}/answer", headers=header)
+        assert response.status_code == 200

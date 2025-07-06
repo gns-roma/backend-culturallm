@@ -23,11 +23,25 @@ def rate_answers(
         )
     username = current_user if type == "human" else None
 
+    query_user = """
+        SELECT id
+        FROM users 
+        WHERE username = ?
+    """
+    params_user = (username,) if username else (None,)
+    try:
+        user_check = execute_query(db, query_user, params_user, fetchone=True, dict=True)
+    except Exception as e:
+        print(f"Errore durante l'inserimento risposta: {e}")
+        raise HTTPException(status_code=500, detail="Errore interno durante l'inserimento della risposta")
+
+    user_id = user_check['id'] if user_check else None
+
     insert_query = """
-        INSERT INTO ratings (answer_id, question_id, username, rating, flag_ia)
+        INSERT INTO ratings (answer_id, question_id, user_id, rating, flag_ia)
         VALUES (?, ?, ?, ?, ?)
     """
-    params = (data.answer_id, data.question_id, username,data.rating, data.flag_ia)
+    params = (data.answer_id, data.question_id, user_id,data.rating, data.flag_ia)
     try:
         execute_query(db, insert_query, params, fetch=False)
     except mariadb.Error as e:

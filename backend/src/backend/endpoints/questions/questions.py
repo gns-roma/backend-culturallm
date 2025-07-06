@@ -213,11 +213,10 @@ def get_single_answer_to_question(
     AND NOT EXISTS (
         SELECT 1
         FROM ratings AS r_check
-        WHERE r_check.answer_id = a.id
-        AND r_check.user_id = (SELECT id FROM users WHERE username = ?))
-    GROUP BY a.id, q.question, a.answer, q.topic
+        WHERE r_check.answer_id = a.id AND r_check.user_id = (SELECT id FROM users WHERE username = ?))
+    GROUP BY a.id, q.question, a.answer, q.topic, q.id
     ORDER BY COUNT(r.id) ASC, RAND()
-    LIMIT 1;"""
+    LIMIT 1"""
     params = (username, username)
 
 
@@ -226,8 +225,4 @@ def get_single_answer_to_question(
     if not row:
         raise HTTPException(status_code=404, detail="No suitable answer found for the given criteria.")
     print(row)
-    try:
-        return RatingRequest(**row)
-    except Exception as e:
-        print(f"Errore durante la creazione del RatingRequest: {e}")
-        raise HTTPException(status_code=422, detail="Errore interno durante la creazione della richiesta di rating.")
+    return RatingRequest(**row)

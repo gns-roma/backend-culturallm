@@ -184,7 +184,7 @@ def get_answers_to_question(question_id: int,
 
 
 
-@router.get("/{question_id}/answer")
+# @router.get("/{question_id}/answer") # La tua route originale
 def get_single_answer_to_question(
     question_id: int,
     db: Annotated[mariadb.Connection, Depends(db_connection)],
@@ -221,10 +221,9 @@ def get_single_answer_to_question(
     LIMIT 1;"""
     params = (question_id, username, username)
 
+
     row = execute_query(db, select_query, params, fetchone=True, dict=True)
 
     if not row:
         raise HTTPException(status_code=404, detail="No suitable answer found for the given criteria.")
-
     return Answer(**row)
-

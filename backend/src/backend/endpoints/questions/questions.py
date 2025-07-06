@@ -207,24 +207,22 @@ def get_single_answer_to_question(
     username = current_user
 
     select_query = """
-    SELECT q.question, q.id AS question_id, a.answer, a.id AS answer_id, q.topic
+    SELECT q.question, a.question_id, a.answer, a.id AS answer_id, q.topic
     FROM answers AS a INNER JOIN questions AS q ON a.question_id = q.id LEFT JOIN ratings AS r ON a.id = r.answer_id
     WHERE (a.user_id IS NULL OR a.user_id != (SELECT id FROM users WHERE username = ?))
     AND NOT EXISTS (
         SELECT 1
         FROM ratings AS r_check
         WHERE r_check.answer_id = a.id AND r_check.user_id = (SELECT id FROM users WHERE username = ?))
-    GROUP BY a.id, q.question, a.answer, q.topic, q.id
+    GROUP BY a.id, a.question_id, q.question, a.answer, q.topic
     ORDER BY COUNT(r.id) ASC, RAND()
     LIMIT 1"""
     params = (username, username)
 
 
-    row = execute_query(db, select_query, params, fetchone=True, dict=True)
-
+    row = execute_query(db, select_query, params, fetch=False, fetchone=True, dict=True)
+    
     if not row:
         raise HTTPException(status_code=404, detail="No suitable answer found for the given criteria.")
     print(row)
-    row["question_id"] = int(row["question_id"])
-    row["answer_id"] = int(row["answer_id"])
     return RatingRequest(**row)

@@ -225,4 +225,6 @@ def get_single_answer_to_question(
     if not row:
         raise HTTPException(status_code=404, detail="No suitable answer found for the given criteria.")
     print(row)
+    row["question_id"] = int(row["question_id"])
+    row["answer_id"] = int(row["answer_id"])
     return RatingRequest(**row)

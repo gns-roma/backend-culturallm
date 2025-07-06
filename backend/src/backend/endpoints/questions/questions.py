@@ -114,6 +114,45 @@ def get_random_question(
         raise HTTPException(status_code=404, detail="Nessuna domanda disponibile.")
     return Question(**row)
 
+@router.get("/qa_to_validate")
+def get_single_answer_to_question(
+    db: Annotated[mariadb.Connection, Depends(db_connection)],
+    current_user: Annotated[Optional[str], Depends(get_current_user)] = None,
+    type: Literal["human", "llm"] = "human") -> RatingRequest:
+    """
+    Restituisce UNA tupla domanda, risposta, topic che l'utente
+    corrente non ha creato né già valutato.
+    Preferisce la risposta con il minor numero di rating.
+    """
+    if type == "human" and current_user is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Unauthorized: User must be logged in for this operation.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    username = current_user
+    select_query = """
+    SELECT a.id AS answer_id, a.question_id AS question_id, a.answer, q.question, q.topic
+    FROM answers AS a INNER JOIN questions AS q ON a.question_id = q.id LEFT JOIN ratings AS r ON a.id = r.answer_id
+    WHERE (a.user_id IS NULL OR a.user_id != (SELECT id FROM users WHERE username = ?))
+    AND NOT EXISTS (
+        SELECT 1
+        FROM ratings AS r_check
+        WHERE r_check.answer_id = a.id AND r_check.user_id = (SELECT id FROM users WHERE username = ?))
+    GROUP BY a.id, a.question_id, q.question, a.answer, q.topic
+    ORDER BY COUNT(r.id) ASC, RAND()
+    LIMIT 1;"""
+    params = (username, username)
+    try:
+        row = execute_query(db, select_query, params, fetch=False, fetchone=True, dict=True)
+    except mariadb.Error as e:
+        print(f"Database error: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error while fetching question and answer.")
+    print(f"Questa è la riga row: {row}")
+    if not row:
+        raise HTTPException(status_code=404, detail="No suitable answer found for the given criteria.")
+    return RatingRequest(**row)
+
 
 
 @router.get("/{question_id}")
@@ -146,7 +185,6 @@ def get_answers_to_question(question_id: int,
             detail="Unauthorized: User must be logged in to answer a question.",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
     username = current_user if type == "human" else None
 
     """
@@ -183,50 +221,3 @@ def get_answers_to_question(question_id: int,
     return [Answer(**row) for row in rows]
 
 
-
-
-@router.get("/qa_to_validate") # La tua route originale
-def get_single_answer_to_question(
-    db: Annotated[mariadb.Connection, Depends(db_connection)],
-    current_user: Annotated[Optional[str], Depends(get_current_user)] = None,
-    type: Literal["human", "llm"] = "human",
-) -> RatingRequest:
-    """
-    Restituisce UNA tupla domanda, risposta, topic che l'utente
-    corrente non ha creato né già valutato.
-    Preferisce la risposta con il minor numero di rating.
-    """
-
-    if type == "human" and current_user is None:
-        raise HTTPException(
-            status_code=401,
-            detail="Unauthorized: User must be logged in for this operation.",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    username = current_user
-
-    select_query = """
-    SELECT a.id AS answer_id, a.question_id AS question_id, a.answer, q.question, q.topic
-    FROM answers AS a INNER JOIN questions AS q ON a.question_id = q.id LEFT JOIN ratings AS r ON a.id = r.answer_id
-    WHERE (a.user_id IS NULL OR a.user_id != (SELECT id FROM users WHERE username = ?))
-    AND NOT EXISTS (
-        SELECT 1
-        FROM ratings AS r_check
-        WHERE r_check.answer_id = a.id AND r_check.user_id = (SELECT id FROM users WHERE username = ?))
-    GROUP BY a.id, a.question_id, q.question, a.answer, q.topic
-    ORDER BY COUNT(r.id) ASC, RAND()
-    LIMIT 1"""
-
-    params = (username, username)
-    row = execute_query(db, select_query, params, fetch=False, fetchone=True, dict=True)
-    if not row:
-        raise HTTPException(status_code=404, detail="No suitable answer found for the given criteria.")
-    row["question_id"] = int(row["question_id"])
-    try:
-        rating_request = RatingRequest(**row)
-    except ValueError as e:
-        # Gestione dell'errore se la conversione fallisce
-        raise HTTPException(status_code=422, detail=f"Invalid data format: {e}, row: {row}, question_id type: {type(row['question_id'])}")
-
-    return rating_request

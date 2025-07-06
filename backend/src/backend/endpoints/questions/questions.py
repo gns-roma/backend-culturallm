@@ -225,6 +225,6 @@ def get_single_answer_to_question(
     row["question_id"] = int(row["question_id"])
     try:
         rating_request = RatingRequest(**row)
-    except ValueError as ve:
-        raise HTTPException(status_code=422, detail=f"Invalid data format: {ve}, row: {row}, question_id type: {type(row['question_id'])}")
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=f"Invalid data format: {e}, row: {row}, question_id type: {type(row['question_id'])}")
     return rating_request

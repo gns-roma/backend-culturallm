@@ -217,12 +217,14 @@ def get_single_answer_to_question(
     GROUP BY a.id, a.question_id, q.question, a.answer, q.topic
     ORDER BY COUNT(r.id) ASC, RAND()
     LIMIT 1"""
+
     params = (username, username)
-
-
     row = execute_query(db, select_query, params, fetch=False, fetchone=True, dict=True)
-    
     if not row:
         raise HTTPException(status_code=404, detail="No suitable answer found for the given criteria.")
-    print(row)
-    return RatingRequest(**row)
+    row["question_id"] = int(row["question_id"])
+    try:
+        rating_request = RatingRequest(**row)
+    except ValueError as ve:
+        raise HTTPException(status_code=422, detail=f"Invalid data format: {ve}, row: {row}, question_id type: {type(row['question_id'])}")
+    return rating_request

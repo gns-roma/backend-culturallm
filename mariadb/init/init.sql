@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS questions (
     cultural_specificity INT NOT NULL DEFAULT 0 CHECK (cultural_specificity BETWEEN 0 AND 10),
     cultural_specificity_notes TEXT,
     tag TEXT,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE NO ACTION 
 );
 
 CREATE TABLE IF NOT EXISTS answers (
@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS answers (
     timestamp DATETIME NOT NULL,
     UNIQUE (question_id, user_id),
     FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE NO ACTION
 );
 
 CREATE TABLE IF NOT EXISTS ratings (
@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS logs (
     action_type VARCHAR(255) CHECK (action_type IN ('question', 'answer', 'rating')),
     score INT NOT NULL DEFAULT 0,
     timestamp DATETIME NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE NO ACTION
 );
 
 CREATE TABLE IF NOT EXISTS leaderboard (

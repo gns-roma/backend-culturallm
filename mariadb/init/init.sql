@@ -9,6 +9,7 @@ CREATE USER 'user'@'%' IDENTIFIED BY 'userpassword';
 GRANT ALL PRIVILEGES ON culturallm_db.* TO 'user'@'%' IDENTIFIED BY 'userpassword';
 FLUSH PRIVILEGES;
 
+
 CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(255) NOT NULL UNIQUE,

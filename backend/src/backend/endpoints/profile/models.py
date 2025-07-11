@@ -10,5 +10,5 @@ class User(BaseModel):
     #profile_picture: str | None = None
 
 class UpdateUserData(BaseModel):
-    email: EmailStr | None = None
+    username: str | None = None
     password: str | None = None

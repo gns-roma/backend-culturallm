@@ -54,7 +54,6 @@ def submit_question(
     try:
         execute_query(db, insert_query, params, fetch=False)
     except Exception as e:
-        print(f"Errore DB: {e}")
         raise HTTPException(status_code=500, detail="Errore inserimento domanda")
     return Response(status_code=201)
 

@@ -102,10 +102,10 @@ def signup(data: SignupRequest, conn: Annotated[mariadb.Connection, Depends(db_c
         raise HTTPException(status_code=400, detail="Username o email già registrati")
     
     insert_query = """
-        INSERT INTO users (username, email, password_hash, salt, signup_date, last_login)
-        VALUES (?, ?, ?, ?, NOW(), NOW())
+        INSERT INTO users (username, email,nation, password_hash, salt, signup_date, last_login)
+        VALUES (?, ?, ?, ?, ?, NOW(), NOW())
     """
-    execute_query(conn, insert_query, (data.username, data.email, pwd_hash, salt_hex), fetch=False)
+    execute_query(conn, insert_query, (data.username, data.email, data.nation, pwd_hash, salt_hex), fetch=False)
 
     return Token(
         access_token=create_access_token({"sub": data.username}), 

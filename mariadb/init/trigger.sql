@@ -2,6 +2,21 @@ USE culturallm_db;
 
 
 DELIMITER //
+CREATE OR REPLACE TRIGGER trg_logs_reports
+AFTER INSERT ON reports
+FOR EACH ROW
+BEGIN
+  if NEW.user_id IS NOT NULL THEN
+    INSERT IGNORE INTO logs (user_id, score, action_type, timestamp)
+    VALUES (NEW.user_id, 0, 'report', NOW());
+  END IF;
+END;//
+DELIMITER ;
+
+
+
+
+DELIMITER //
 CREATE OR REPLACE TRIGGER trg_logs_questions
 AFTER INSERT ON questions
 FOR EACH ROW

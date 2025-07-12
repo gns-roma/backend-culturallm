@@ -6,6 +6,7 @@ from endpoints.questions.models import Question, QuestionValues
 from db.mariadb import db_connection, execute_query
 from endpoints.auth.auth import get_current_user
 from endpoints.answers.models import Answer
+from endpoints.validate.models import RatingRequest
 
 
 router = APIRouter(prefix="/questions", tags=["questions"])
@@ -53,7 +54,6 @@ def submit_question(
     try:
         execute_query(db, insert_query, params, fetch=False)
     except Exception as e:
-        print(f"Errore DB: {e}")
         raise HTTPException(status_code=500, detail="Errore inserimento domanda")
     return Response(status_code=201)
 
@@ -113,24 +113,50 @@ def get_random_question(
         raise HTTPException(status_code=404, detail="Nessuna domanda disponibile.")
     return Question(**row)
 
+@router.get("/qa_to_validate")
+def get_single_answer_to_question(
+    db: Annotated[mariadb.Connection, Depends(db_connection)],
+    current_user: Annotated[Optional[str], Depends(get_current_user)] = None,
+    questionType: Literal["human", "llm"] = "human",
+) -> RatingRequest:
+    """
+    Restituisce UNA tupla domanda, risposta, topic che l'utente
+    corrente non ha creato né già valutato.
+    Preferisce la risposta con il minor numero di rating.
+    """
 
+    if questionType == "human" and current_user is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Unauthorized: User must be logged in for this operation.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
-@router.get("/{question_id}")
-def get_question(question_id: int, db: Annotated[mariadb.Connection, Depends(db_connection)])->Question:
-    """
-    Retrieve a question by its ID.
-    """
-    query = """
-    SELECT  q.id, q.type, u.username, q.question, q.topic, q.cultural_specificity, q.cultural_specificity_notes
-    FROM    questions q LEFT JOIN users u ON u.id = q.user_id
-    WHERE   q.id = ?
-    """
-    params = (question_id,)
-    row = execute_query(db, query, params,fetchone=True, dict=True)
+    username = current_user
+
+    select_query = """
+    SELECT a.id AS answer_id, a.question_id AS question_id, a.answer, q.question, q.topic
+    FROM answers AS a INNER JOIN questions AS q ON a.question_id = q.id LEFT JOIN ratings AS r ON a.id = r.answer_id
+    WHERE (a.user_id IS NULL OR a.user_id != (SELECT id FROM users WHERE username = ?))
+    AND NOT EXISTS (
+        SELECT 1
+        FROM ratings AS r_check
+        WHERE r_check.answer_id = a.id AND r_check.user_id = (SELECT id FROM users WHERE username = ?))
+    GROUP BY a.id, a.question_id, q.question, a.answer, q.topic
+    ORDER BY COUNT(r.id) ASC, RAND()
+    LIMIT 1;"""
+    params = (username, username)
+
+    try:
+        row = execute_query(db, select_query, params, fetch=False, fetchone=True, dict=True)
+    except mariadb.Error as e:
+        print(f"Database error: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error while fetching question and answer.")
+
     if not row:
-        raise HTTPException(status_code=404, detail="Nessuna domanda trovata")
-    return Question(**row)
+        raise HTTPException(status_code=404, detail="No suitable answer found for the given criteria.")
 
+    return RatingRequest(**row)
 
 
 @router.get("/{question_id}/answers")
@@ -145,7 +171,6 @@ def get_answers_to_question(question_id: int,
             detail="Unauthorized: User must be logged in to answer a question.",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
     username = current_user if type == "human" else None
 
     """
@@ -182,48 +207,18 @@ def get_answers_to_question(question_id: int,
     return [Answer(**row) for row in rows]
 
 
-
-
-@router.get("/{question_id}/answer") # La tua route originale
-def get_single_answer_to_question(
-    question_id: int,
-    db: Annotated[mariadb.Connection, Depends(db_connection)],
-    current_user: Annotated[Optional[str], Depends(get_current_user)] = None,
-    type: Literal["human", "llm"] = "human",
-) -> Answer:
+@router.get("/{question_id}")
+def get_question(question_id: int, db: Annotated[mariadb.Connection, Depends(db_connection)])->Question:
     """
-    Restituisce UNA risposta alla domanda `question_id` che l'utente
-    corrente non ha creato né già valutato.
-    Preferisce la risposta con il minor numero di rating.
+    Retrieve a question by its ID.
     """
-
-    if type == "human" and current_user is None:
-        raise HTTPException(
-            status_code=401,
-            detail="Unauthorized: User must be logged in for this operation.",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    username = current_user
-
-    select_query = """
-    SELECT a.id, a.type, u.username, a.question_id, a.answer, COUNT(r.id) AS rating_count
-    FROM answers AS a LEFT JOIN users AS u ON a.user_id = u.id LEFT JOIN ratings AS r ON a.id = r.answer_id
-    WHERE a.question_id = ?
-    AND (a.user_id IS NULL OR a.user_id != (SELECT id FROM users WHERE username = ?))
-    AND NOT EXISTS (
-        SELECT 1
-        FROM ratings r_check
-        WHERE r_check.answer_id = a.id
-        AND r_check.user_id = (SELECT id FROM users WHERE username = ?))
-    GROUP BY a.id, a.type, u.username, a.question_id, a.answer
-    ORDER BY rating_count ASC, RAND()
-    LIMIT 1;"""
-    params = (question_id, username, username)
-
-
-    row = execute_query(db, select_query, params, fetchone=True, dict=True)
-
+    query = """
+    SELECT  q.id, q.type, u.username, q.question, q.topic, q.cultural_specificity, q.cultural_specificity_notes
+    FROM    questions q LEFT JOIN users u ON u.id = q.user_id
+    WHERE   q.id = ?
+    """
+    params = (question_id,)
+    row = execute_query(db, query, params,fetchone=True, dict=True)
     if not row:
-        raise HTTPException(status_code=404, detail="No suitable answer found for the given criteria.")
-    return Answer(**row)
+        raise HTTPException(status_code=404, detail="Nessuna domanda trovata")
+    return Question(**row)

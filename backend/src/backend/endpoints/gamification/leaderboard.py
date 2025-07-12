@@ -55,7 +55,7 @@ def get_user_position(
     UNION ALL
     SELECT username, 0, NULL
     FROM users
-    WHERE username = ? AND username NOT IN (SELECT username FROM leaderboard)
+    WHERE username = ? AND username NOT IN (SELECT username FROM leaderboard JOIN users ON leaderboard.user_id = users.id)
     """
     user = execute_query(db, select_query, (username, username),fetchone=True, dict=True)
     if not user:

@@ -24,3 +24,15 @@ services:
       DB_USER: user
       DB_PASSWORD: userpassword
       DB_NAME: culturallm_db
+    command: >
+      uvicorn backend:app --host 0.0.0.0 --port 8003
+
+
+
+# volumes:
+# - /home/backend/fullchain.pem:/fullchain.pem:ro
+# - /home/backend/privkey.pem:/privkey.pem:ro
+
+# certiicates     
+# --ssl-keyfile /privkey.pem
+# --ssl-certfile /fullchain.pem

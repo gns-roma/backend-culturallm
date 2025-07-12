@@ -31,7 +31,7 @@ def profile(
     Retrieve the profile of the current user.
     """
     get_query = """
-        SELECT username, email, signup_date, last_login
+        SELECT username, email, signup_date, last_login, nation
         FROM users 
         WHERE username = ?
     """

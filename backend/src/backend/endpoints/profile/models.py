@@ -7,6 +7,7 @@ class User(BaseModel):
     username: str
     email: EmailStr
     date: datetime
+    nation: str
     #profile_picture: str | None = None
 
 class UpdateUserData(BaseModel):

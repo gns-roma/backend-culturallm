@@ -26,7 +26,7 @@ def initialize_db_pool():
 
 @pytest.mark.order(1)
 def test_signup():
-    response = client.post("/auth/signup/", json={"username": "sorcarlo", "email": "carlo.verdone1927@gmail.com", "nation":"Italia","password": "forzamaggica1927"})
+    response = client.post("/auth/signup/", json={"username": "sorcarlo", "email": "carlo.verdone1927@gmail.com", "nation":"Italia","password": "forzamaggica"})
     assert response.status_code == 422
     response = client.post("/auth/signup/", json={"username": "sorcarlo", "email": "carlo.verdone1927@gmail.com", "nation":"Italia","password": "forzamaggica1927!"})
     assert response.status_code == 200
@@ -77,5 +77,6 @@ def test_profile():
         "username": "sorcarlo", 
         "email": "carlo.verdone1927@gmail.com", 
         "signup_date": response.json()["signup_date"], 
-        "last_login": response.json()["last_login"]
+        "last_login": response.json()["last_login"],
+        "nation": "Italia"
     }

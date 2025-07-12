@@ -1,6 +1,7 @@
 from email.policy import HTTP
 from pydantic import BaseModel, EmailStr, Field, model_validator
 
+
 class SignupRequest(BaseModel):
     username: str = Field(..., min_length=1)
     email: EmailStr
@@ -9,7 +10,7 @@ class SignupRequest(BaseModel):
         ...,
         min_length=12,
         max_length=100,
-        pattern=r'^[A-Za-z0-9!@#$%&+=*\-?\.\]+$', 
+        pattern=r'^[A-Za-z0-9!@#$%&+=*\-?.]+$',
         description="La password deve contenere solo lettere, numeri e i simboli ammessi: !@#$%&+=*-?.",
     )
 
@@ -27,6 +28,7 @@ class SignupRequest(BaseModel):
             raise ValueError("La password deve contenere almeno una lettera")
 
         return self
+
 
     
 
